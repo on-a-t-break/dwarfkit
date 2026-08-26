@@ -28,6 +28,11 @@ add_library(dwarfkit STATIC
   antelope/serializer/decoder.cpp
   antelope/serializer/serializer.cpp
   antelope/serializer/traits.cpp
+  antelope/api/client.cpp
+  antelope/api/provider.cpp
+  antelope/api/v1/chain.cpp
+  antelope/api/v1/history.cpp
+  antelope/api/v1/types.cpp
 )
 
 target_include_directories(dwarfkit PUBLIC
@@ -36,10 +41,38 @@ target_include_directories(dwarfkit PUBLIC
 
 target_link_libraries(dwarfkit
   PUBLIC dk_expected dk_json
-  PRIVATE dk_trezor_crypto secp256k1 dk_miniz)
+  PRIVATE dk_trezor_crypto secp256k1 dk_zlib)
 if(WIN32)
   target_link_libraries(dwarfkit PRIVATE bcrypt)
 endif()
 
 target_compile_features(dwarfkit PUBLIC cxx_std_20)
 dk_warnings(dwarfkit)
+
+if(DK_WITH_CURL)
+  find_package(CURL QUIET)
+  if(NOT CURL_FOUND)
+    include(FetchContent)
+    set(BUILD_CURL_EXE OFF CACHE BOOL "" FORCE)
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+    set(BUILD_STATIC_LIBS ON CACHE BOOL "" FORCE)
+    set(HTTP_ONLY ON CACHE BOOL "" FORCE)
+    set(CURL_USE_LIBPSL OFF CACHE BOOL "" FORCE)
+    set(CURL_USE_LIBSSH2 OFF CACHE BOOL "" FORCE)
+    set(CURL_BROTLI OFF CACHE BOOL "" FORCE)
+    set(CURL_ZSTD OFF CACHE BOOL "" FORCE)
+    set(CURL_DISABLE_LDAP ON CACHE BOOL "" FORCE)
+    set(CURL_ENABLE_EXPORT_TARGET OFF CACHE BOOL "" FORCE)
+    if(WIN32)
+      set(CURL_USE_SCHANNEL ON CACHE BOOL "" FORCE)
+    endif()
+    FetchContent_Declare(curl
+      GIT_REPOSITORY https://github.com/curl/curl
+      GIT_TAG curl-8_10_1
+      GIT_SHALLOW TRUE)
+    FetchContent_MakeAvailable(curl)
+  endif()
+  add_library(dwarfkit_curl STATIC transport/curl_fetch_provider.cpp)
+  target_link_libraries(dwarfkit_curl PUBLIC dwarfkit PRIVATE CURL::libcurl)
+  dk_warnings(dwarfkit_curl)
+endif()

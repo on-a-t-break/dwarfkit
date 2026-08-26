@@ -44,3 +44,7 @@ Every intentional deviation from Wharfkit, one line of reason each. Anything not
 | Fixed-size array (`int32[4]`) decode reads a varuint length prefix (upstream bug, encode writes none) | Decode honors the fixed size symmetrically | Upstream decode of a fixed array cannot round-trip its own encode |
 | `strictExtensions` decode option with `abiDefault` synthesis | Deferred until the session kit needs it | Tracked in PROGRESS.md |
 | Self-referential optional struct fields (`self?: Complex`) | `std::shared_ptr<T>` field maps to `T?` | `std::optional` requires a complete type |
+| miniz (BLUEPRINT.md section 3) | Vendored zlib 1.3.1 | pako is byte-identical to zlib, keeping packed-transaction fixture hashes and ESR URIs byte-compatible; miniz streams differ |
+| api `FetchProvider` class | `FetchAPIProvider` (wraps the transport `FetchProvider` interface) | Two types cannot share the name in one namespace; the transport interface keeps the blueprint-pinned name |
+| `BoolType.from` passes any value through | `bool` fromJSON accepts booleans and 0/1 numbers, rejects the rest | nodeos emits 0/1 for some bool fields |
+| Untyped API interfaces (`PushTransactionResponse`, `SendTransactionResponse`, `GetAbiResponse`, params bags) | Plain `json` | Upstream never runs them through the serializer either |

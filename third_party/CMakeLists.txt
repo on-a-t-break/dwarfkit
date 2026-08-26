@@ -10,8 +10,26 @@ target_include_directories(dk_json SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/
 add_library(dk_doctest INTERFACE)
 target_include_directories(dk_doctest SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/doctest)
 
-add_library(dk_miniz STATIC miniz/miniz.c)
-target_include_directories(dk_miniz SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/miniz)
+# zlib rather than miniz: pako (the zlib JS port Wharfkit compresses with)
+# produces byte-identical streams to real zlib, which keeps packed transaction
+# fixture hashes and ESR URIs byte-compatible.
+add_library(dk_zlib STATIC
+  zlib/adler32.c
+  zlib/compress.c
+  zlib/crc32.c
+  zlib/deflate.c
+  zlib/infback.c
+  zlib/inffast.c
+  zlib/inflate.c
+  zlib/inftrees.c
+  zlib/trees.c
+  zlib/uncompr.c
+  zlib/zutil.c)
+target_include_directories(dk_zlib SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/zlib)
+target_compile_definitions(dk_zlib PUBLIC ZLIB_CONST)
+if(MSVC)
+  target_compile_options(dk_zlib PRIVATE /wd4996 /wd4131 /wd4127 /wd4244 /wd4245 /wd4267)
+endif()
 
 add_library(dk_qrcodegen STATIC qrcodegen/qrcodegen.cpp)
 target_include_directories(dk_qrcodegen SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/qrcodegen)

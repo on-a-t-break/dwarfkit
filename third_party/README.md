@@ -5,10 +5,11 @@
 | tl::expected | v1.1.0 | github.com/TartanLlama/expected | CC0 | expected/include/tl/expected.hpp |
 | nlohmann/json | v3.11.3 | github.com/nlohmann/json | MIT | nlohmann/include/nlohmann/json.hpp |
 | doctest | v2.4.11 | github.com/doctest/doctest | MIT | doctest/doctest/doctest.h |
-| miniz | 3.0.2 | github.com/richgel999/miniz (release amalgamation) | MIT | miniz/miniz.{c,h} |
+| zlib | 1.3.1 | github.com/madler/zlib | zlib | zlib/ (gz* file API omitted) |
 | qrcodegen | v1.8.0 | github.com/nayuki/QR-Code-generator (cpp/) | MIT | qrcodegen/qrcodegen.{hpp,cpp} |
 | trezor-crypto | commit da48ad0c0980411d5f3f1f78084c65255c5213ba | github.com/trezor/trezor-firmware (crypto/) | MIT | trezor-crypto/ (subset, see COMMIT) |
 | libsecp256k1 | v0.6.0 | github.com/bitcoin-core/secp256k1 | MIT | fetched at configure time (FetchContent), not vendored |
+| libcurl | 8.10.1 | github.com/curl/curl | curl | fetched at configure time when DK_WITH_CURL and no system curl |
 
 ## Local patches (marked `dwarfkit patch` in the source)
 

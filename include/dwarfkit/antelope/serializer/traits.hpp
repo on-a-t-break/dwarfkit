@@ -68,8 +68,11 @@ struct abi_traits<bool> {
     }
     static json toJSON(bool v) { return v; }
     static Result<bool> fromJSON(const json& j) {
-        if (!j.is_boolean()) return err(ErrorKind::Invalid, "Expected bool");
-        return j.get<bool>();
+        if (j.is_boolean()) return j.get<bool>();
+        // nodeos also emits 0/1 for booleans; upstream's BoolType.from passes
+        // any value through
+        if (j.is_number()) return j.get<double>() != 0;
+        return err(ErrorKind::Invalid, "Expected bool");
     }
     static bool abiDefault() { return false; }
 };
@@ -404,6 +407,23 @@ struct abi_traits<Checksum256> : checksum_traits_impl<32, Checksum256> {
 template <>
 struct abi_traits<Checksum512> : checksum_traits_impl<64, Checksum512> {
     static constexpr std::string_view abiName = "checksum512";
+};
+
+// Blob is base64 in JSON and raw bytes on the wire (no length prefix); binary
+// decode has no length information so it reads to the end of the buffer.
+template <>
+struct abi_traits<Blob> {
+    static constexpr std::string_view abiName = "blob";
+    static Result<void> toABI(const Blob& v, ABIEncoder& e) {
+        e.writeArray(v.array);
+        return {};
+    }
+    static Result<Blob> fromABI(ABIDecoder&) {
+        return err(ErrorKind::Unsupported, "blob has no binary decoding");
+    }
+    static json toJSON(const Blob& v) { return v.toJSON(); }
+    static Result<Blob> fromJSON(const json& j) { return Blob::from(j.get<std::string>()); }
+    static Blob abiDefault() { return {}; }
 };
 
 template <>
