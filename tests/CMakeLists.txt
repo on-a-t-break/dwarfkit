@@ -9,6 +9,9 @@ target_compile_definitions(dwarfkit_tests PRIVATE
   DK_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/fixtures")
 if(DK_LIVE_TESTS)
   target_compile_definitions(dwarfkit_tests PRIVATE DK_LIVE_TESTS=1)
+  if(TARGET dwarfkit_curl)
+    target_link_libraries(dwarfkit_tests PRIVATE dwarfkit_curl)
+  endif()
 endif()
 dk_warnings(dwarfkit_tests)
 

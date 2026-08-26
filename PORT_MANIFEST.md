@@ -19,7 +19,7 @@ One row per upstream repo (all of github.com/wharfkit at 2026-08-26, plus greyma
 | assets | - | 52cc2be | reference | - | brand/media assets, no code |
 | atomicassets | 1.3.1 | 6b3a08e | port | - | Phase 4 extras |
 | bundle | 0.1.2 | 2e5e6fb | reference | - | npm meta-bundle, no logic |
-| buoy-client | 1.0.4 | 7dc9c71 | port | - | Phase 2 (greymass org) |
+| buoy-client | 1.0.4 | 7dc9c71 | port | done 1.0.4 | send/receive/Listener as blocking calls over the transport interfaces; live cb.anchor.link round-trip verified |
 | chain-logo | - | 47e69e4 | reference | - | logo CDN assets |
 | chains | - | EMPTY | skip | - | empty repository |
 | cli | 2.11.0 | 0a2848c | port | - | Phase 6, as dkgen (generate subcommand only) |
@@ -42,11 +42,11 @@ One row per upstream repo (all of github.com/wharfkit at 2026-08-26, plus greyma
 | login-plugin-template | 1.0.0 | 0610c4b | reference | - | template; informs examples/ |
 | mock-data | 1.3.1 | 9cf701d | port | wip | MockFetchProvider + makeClient ported (tests/util); session mocks land with the session kit |
 | msigs | 0.3.1 | c8ccca7 | port | - | Phase 4 extras; Roborovski msigs API client. NOTE: the blueprint's "msig proposal transact plugin" does not exist as an org repo |
-| protocol-esr | 1.6.1 | 1b61ed2 | port | - | Phase 2 |
+| protocol-esr | 1.6.1 | 1b61ed2 | port | done 1.6.1 | createIdentityRequest takes EsrLoginContext until the session kit lands |
 | protocol-scatter | 1.4.0 | 846bd39 | skip | - | browser window injection |
 | resources | 1.6.0 | 0af2e3c | port | - | Phase 4 |
 | roborovski | 1.1.0 | 2025112 | port | - | Phase 4 extras; Roborovski API client |
-| sealed-messages | 1.2.0 | 8fc32b0 | port | - | Phase 4 extras; Shamir secret sharing + sealed messages (the blueprint's "Shamir package") |
+| sealed-messages | 1.2.0 | 8fc32b0 | port | done 1.2.0 | folded into protocol_esr; AES byte parity proven against the npm package (README mentions Shamir but src only seals/unseals) |
 | session | 1.6.1 | 467f049 | port | - | Phase 3 |
 | signing-request | 3.4.0 | 18a13f7 | port | done 3.4.0 | request.ts and misc.ts green with exact URI/digest/proof vectors |
 | skill | - | f87fb83 | skip | - | Claude Code skill for wharfkit development, no library code |

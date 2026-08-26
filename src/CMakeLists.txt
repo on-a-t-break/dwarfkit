@@ -39,6 +39,11 @@ add_library(dwarfkit STATIC
   signing_request/chain_id.cpp
   signing_request/identity_proof.cpp
   signing_request/signing_request.cpp
+  protocol_esr/buoy.cpp
+  protocol_esr/callback.cpp
+  protocol_esr/esr.cpp
+  protocol_esr/sealed_messages.cpp
+  protocol_esr/utils.cpp
 )
 
 target_include_directories(dwarfkit PUBLIC
@@ -69,6 +74,8 @@ if(DK_WITH_CURL)
     set(CURL_ZSTD OFF CACHE BOOL "" FORCE)
     set(CURL_DISABLE_LDAP ON CACHE BOOL "" FORCE)
     set(CURL_ENABLE_EXPORT_TARGET OFF CACHE BOOL "" FORCE)
+    # ws:// support for CurlWebSocketProvider (experimental option in 8.10)
+    set(ENABLE_WEBSOCKETS ON CACHE BOOL "" FORCE)
     if(WIN32)
       set(CURL_USE_SCHANNEL ON CACHE BOOL "" FORCE)
     endif()
@@ -78,7 +85,9 @@ if(DK_WITH_CURL)
       GIT_SHALLOW TRUE)
     FetchContent_MakeAvailable(curl)
   endif()
-  add_library(dwarfkit_curl STATIC transport/curl_fetch_provider.cpp)
+  add_library(dwarfkit_curl STATIC
+    transport/curl_fetch_provider.cpp
+    transport/curl_websocket_provider.cpp)
   target_link_libraries(dwarfkit_curl PUBLIC dwarfkit PRIVATE CURL::libcurl)
   dk_warnings(dwarfkit_curl)
 endif()

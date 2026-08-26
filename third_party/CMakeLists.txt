@@ -35,7 +35,8 @@ add_library(dk_qrcodegen STATIC qrcodegen/qrcodegen.cpp)
 target_include_directories(dk_qrcodegen SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/qrcodegen)
 target_compile_features(dk_qrcodegen PRIVATE cxx_std_20)
 
-# R1 (NIST P-256) sign/verify/recover plus sha2/sha512/ripemd160/hmac/hmac_drbg.
+# R1 (NIST P-256) sign/verify/recover plus sha2/sha512/ripemd160/hmac/hmac_drbg,
+# and Gladman AES (aes/) for sealed messages (AES-256-CBC).
 # DK_TREZOR_MINIMAL compiles only the ecdsa math: no bip32, no address/base58
 # helpers, no hasher.c family (see README.md patches). trezor's rand.c is
 # intentionally not compiled; dwarfkit's CSPRNG shim provides the random_buffer
@@ -50,9 +51,14 @@ add_library(dk_trezor_crypto STATIC
   trezor-crypto/rfc6979.c
   trezor-crypto/ripemd160.c
   trezor-crypto/secp256k1.c
-  trezor-crypto/sha2.c)
+  trezor-crypto/sha2.c
+  trezor-crypto/aes/aescrypt.c
+  trezor-crypto/aes/aeskey.c
+  trezor-crypto/aes/aestab.c
+  trezor-crypto/aes/aes_modes.c)
 target_include_directories(dk_trezor_crypto SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/trezor-crypto)
-target_compile_definitions(dk_trezor_crypto PUBLIC DK_TREZOR_MINIMAL=1)
+# AES_128/AES_192/AES_VAR match trezor's own Makefile (AES_256 is always on)
+target_compile_definitions(dk_trezor_crypto PUBLIC DK_TREZOR_MINIMAL=1 AES_128 AES_192 AES_VAR)
 if(MSVC)
   target_compile_options(dk_trezor_crypto PRIVATE /wd4018 /wd4244 /wd4267 /wd4146)
 endif()

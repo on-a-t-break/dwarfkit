@@ -4,7 +4,7 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 
 ## Current state
 
-- Phase: 2. common, abicache and signing-request done; next protocol-esr.
+- Phase: 2 complete (common, abicache, signing-request, protocol-esr). Next: Phase 3 session kit.
 - In flight: nothing
 - Notes: CancelToken deferred to protocol-esr. strictExtensions decoding mode deferred until the session kit needs it (part of test/serializer.ts 'binary extensions' not ported). K1 byte-parity vectors verified against elliptic via node (scratchpad/elliptest). miniz was replaced with vendored zlib 1.3.1 for byte parity with pako (fixture hashes + ESR URIs); see DIVERGENCES.md.
 
@@ -28,7 +28,7 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 - [x] `common`: `Chains`, `ChainDefinition`, explorers, logos. (Vaulta present, answering open question 2; accountDataType becomes a template param on get_account, see DIVERGENCES.md)
 - [x] `abicache`. (pending promise map becomes a mutex; upstream merge/partial logic ported)
 - [x] `signing_request` with zlib and base64u; all its tests. (zlib is built in, the ZlibProvider option becomes a bool; ChainId subclasses Checksum256 so the checksum classes lost `final`; placeholder resolution walks decoded JSON; see DIVERGENCES.md. request.ts and misc.ts ported with exact esr:// URI, digest and IdentityProof vectors.)
-- [ ] `protocol_esr` + buoy send/receive over the transport interfaces; `CurlWebSocketProvider`; uuid v4; unit tests with a fake `WebSocketProvider`.
+- [x] `protocol_esr` + buoy send/receive over the transport interfaces; `CurlWebSocketProvider`; uuid v4; unit tests with a fake `WebSocketProvider`. (Includes sealed-messages with trezor Gladman AES, byte parity proven against @wharfkit/sealed-messages under node; `core/cancel.hpp` CancelToken; `transport/websocket_provider.hpp`; buoy Listener as a blocking receive loop with heartbeat acks and backoff reconnects; live send/receive against cb.anchor.link verified with DK_LIVE_TESTS. createIdentityRequest takes EsrLoginContext, the LoginContext slice, until the session kit lands.)
 
 ## Phase 3: session and plugins
 

@@ -24,7 +24,7 @@ Minimal-build trim, guarded by `#ifndef DK_TREZOR_MINIMAL` (always defined by th
 
 ## Intentionally not compiled
 
-Only these trezor files build: `bignum.c ecdsa.c hmac.c hmac_drbg.c memzero.c nist256p1.c rfc6979.c ripemd160.c secp256k1.c sha2.c`. Everything else in the directory is vendored for header completeness only.
+Only these trezor files build: `bignum.c ecdsa.c hmac.c hmac_drbg.c memzero.c nist256p1.c rfc6979.c ripemd160.c secp256k1.c sha2.c` plus the Gladman AES subset `aes/{aescrypt,aeskey,aestab,aes_modes}.c` (defines `AES_128 AES_192 AES_VAR`, matching trezor's Makefile) for sealed messages. `aes/{aesccm,aesgcm,aestst,gf128mul}` and friends are not vendored. Everything else in the directory is vendored for header completeness only.
 
 - `trezor-crypto/rand.c` is not vendored; its `random_buffer` (declared in `rand.h`) is provided by dwarfkit's OS CSPRNG shim so no insecure fallback PRNG can ever link in.
 - trezor's `base58.c` uses VLAs (no MSVC) and is unused; dwarfkit's public base58 is a direct port of wharfkit `crypto/base58.ts` (error messages and all four check variants).
