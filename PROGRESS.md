@@ -6,8 +6,8 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 
 - Phase: 1 (antelope core)
 - In flight: nothing
-- Next: crypto item (K1 via libsecp256k1 with elliptic-compatible nonce, R1 via trezor, key string formats, PublicKey/PrivateKey/Signature)
-- Notes: CancelToken deferred to protocol-esr. jsonParse helper deferred to first call site. test/chain.ts cases needing Action/Transaction/Authority/keys/ABI/Serializer join chain.test.cpp as those items land.
+- Next: serializer + ABI item (ABI model, resolveType, ABIEncoder/ABIDecoder, builtins, Serializer static/dynamic/synthesize/stringify, DK_STRUCT/DK_FIELDS/DK_VARIANT/DK_TYPE_ALIAS/BinaryExtension, Action, Transaction, SignedTransaction, PackedTransaction, authority types)
+- Notes: CancelToken deferred to protocol-esr. jsonParse helper deferred to first call site. WA verify (webauthn) deferred: needs the serializer's ABIDecoder to parse the on-wire WA sig/key structure (test/webauthn.ts); WA string parse+serialize already work. PublicKey/Signature fromABI (WA variable-length) land with the serializer. test/chain.ts + authority-sort.ts cases needing Action/Transaction/Authority/ABI/Serializer join as those items land. K1 byte-parity vectors verified against elliptic via node (scratchpad/elliptest).
 
 ## Phase 0: Bootstrap
 
@@ -19,7 +19,7 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 
 - [x] `core/`: `Result`, `Error`, `json` helpers, `Bytes`, hex, base64, base58 (all check variants), sha256/sha512/ripemd160/hmac, CSPRNG shim. (base64 deferred to first call site)
 - [x] Chain types: integers (incl. 128-bit, var ints, `toJSON` rules), `Float128`, `Name` + `_n`, `Asset`/`Symbol`/`SymbolCode`/`ExtendedAsset` + literals, time types, checksums, `BlockId`, `Blob`.
-- [ ] Crypto: K1 via libsecp256k1 with the elliptic-compatible nonce function; R1 via trezor-crypto; WA parse/verify; `PublicKey`, `PrivateKey`, `Signature` full method sets; key string formats.
+- [x] Crypto: K1 via libsecp256k1 with the elliptic-compatible nonce function; R1 via trezor-crypto; WA parse/verify; `PublicKey`, `PrivateKey`, `Signature` full method sets; key string formats. (WA verify deferred to serializer item; WA string parse/serialize done; K1 byte-parity proven vs elliptic)
 - [ ] `ABI` model and `resolveType`, `ABIEncoder`/`ABIDecoder`, builtins, `Serializer` (static, dynamic, `synthesize`, `stringify`), `DK_STRUCT`/`DK_FIELDS`/`DK_VARIANT`/`DK_TYPE_ALIAS`/`BinaryExtension`, `Action`, `Transaction`, `SignedTransaction`, `PackedTransaction`, authority types.
 - [ ] `APIClient`, `APIProvider`, `FetchProvider`, `CurlFetchProvider`, `MockFetchProvider`, `v1.chain` and `v1.history` with all `types.ts` structs.
 - [ ] All `antelope/test/tests/*.ts` ported and green against copied fixtures.

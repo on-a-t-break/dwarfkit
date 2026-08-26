@@ -4,6 +4,7 @@ add_library(dwarfkit STATIC
   core/random.cpp
   core/version.cpp
   antelope/base58.cpp
+  antelope/crypto.cpp
   antelope/utils.cpp
   antelope/chain/asset.cpp
   antelope/chain/blob.cpp
@@ -13,6 +14,9 @@ add_library(dwarfkit STATIC
   antelope/chain/float.cpp
   antelope/chain/integer.cpp
   antelope/chain/name.cpp
+  antelope/chain/private_key.cpp
+  antelope/chain/public_key.cpp
+  antelope/chain/signature.cpp
   antelope/chain/time.cpp
 )
 

@@ -36,3 +36,5 @@ Every intentional deviation from Wharfkit, one line of reason each. Anything not
 | `toFixed` rounds decimal ties toward positive infinity | `Symbol::convertFloat` uses printf rounding (ties to even) | Differs only when value*10^precision is exactly representable at a .5 tie |
 | `TimePoint.equals(badString)` throws | Returns false | equals returning Result would break comparison ergonomics |
 | `_n` name literal accepts what `Name.from` accepts (silent mangling) | `_n`, `_asset`, `_symbol` are consteval and reject invalid literals at compile time | Compile-time validation is free and matches CDT |
+| elliptic for K1 and R1 curves | libsecp256k1 for K1 (custom nonce reproduces elliptic's HMAC-DRBG with pers=[attempt]; byte-parity proven), trezor-crypto nist256p1 for R1 | No elliptic in C++; K1 parity is asserted, R1 tests are round-trip only |
+| `PrivateKey` mutable `.data` reassignment (a test sets `k.data = Bytes.random(31)`) | Not supported; construct via `PrivateKey::make` which enforces the 32-byte invariant | That test asserts a throw C++ gives at construction |
