@@ -199,13 +199,11 @@ Result<std::array<uint8_t, 33>> getPublic(std::span<const uint8_t> secret, KeyTy
                                       SECP256K1_EC_COMPRESSED);
         return compressed;
     }
-    if (type == KeyType::R1) {
-        if (ecdsa_get_public_key33(&nist256p1, secret.data(), compressed.data()) != 0) {
-            return err(ErrorKind::Invalid, "Invalid private key");
-        }
-        return compressed;
+    // R1 and WA both derive on the p256 curve
+    if (ecdsa_get_public_key33(&nist256p1, secret.data(), compressed.data()) != 0) {
+        return err(ErrorKind::Invalid, "Invalid private key");
     }
-    return err(ErrorKind::Unsupported, "Cannot derive WA public keys");
+    return compressed;
 }
 
 Result<std::array<uint8_t, 33>> recover(std::span<const uint8_t> signature,
@@ -308,18 +306,13 @@ bool verify(std::span<const uint8_t> signature, std::span<const uint8_t> message
         secp256k1_ecdsa_signature_normalize(ctx, &sig, &sig);
         return secp256k1_ecdsa_verify(ctx, &sig, message.data(), &parsed) == 1;
     }
-    if (type == KeyType::R1) {
-        std::array<uint8_t, 64> compact{};
-        std::copy(signature.begin() + 1, signature.begin() + 65, compact.begin());
-        return ecdsa_verify_digest(&nist256p1, pubkey.data(), compact.data(), message.data()) == 0;
-    }
-    return false;
+    // R1 and WA both verify on the p256 curve
+    std::array<uint8_t, 64> compact{};
+    std::copy(signature.begin() + 1, signature.begin() + 65, compact.begin());
+    return ecdsa_verify_digest(&nist256p1, pubkey.data(), compact.data(), message.data()) == 0;
 }
 
 Result<std::array<uint8_t, 32>> generate(KeyType type) {
-    if (type != KeyType::K1 && type != KeyType::R1) {
-        return err(ErrorKind::Unsupported, "Cannot generate WA keys");
-    }
     for (int attempt = 0; attempt < 8; ++attempt) {
         DK_TRY(bytes, secureRandom(32));
         std::array<uint8_t, 32> key{};

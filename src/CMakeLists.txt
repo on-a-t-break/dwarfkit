@@ -3,6 +3,7 @@ add_library(dwarfkit STATIC
   core/hash.cpp
   core/random.cpp
   core/version.cpp
+  core/zlib.cpp
   antelope/base58.cpp
   antelope/crypto.cpp
   antelope/utils.cpp
@@ -16,8 +17,17 @@ add_library(dwarfkit STATIC
   antelope/chain/name.cpp
   antelope/chain/private_key.cpp
   antelope/chain/public_key.cpp
+  antelope/chain/abi.cpp
+  antelope/chain/action.cpp
+  antelope/chain/authority.cpp
+  antelope/chain/permission_level.cpp
   antelope/chain/signature.cpp
   antelope/chain/time.cpp
+  antelope/chain/transaction.cpp
+  antelope/serializer/builtins.cpp
+  antelope/serializer/decoder.cpp
+  antelope/serializer/serializer.cpp
+  antelope/serializer/traits.cpp
 )
 
 target_include_directories(dwarfkit PUBLIC

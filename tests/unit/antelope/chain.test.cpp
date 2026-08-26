@@ -3,6 +3,7 @@
 #include <doctest/doctest.h>
 
 #include <dwarfkit/antelope/chain/asset.hpp>
+#include <dwarfkit/antelope/chain/authority.hpp>
 #include <dwarfkit/antelope/chain/block_id.hpp>
 #include <dwarfkit/antelope/chain/blob.hpp>
 #include <dwarfkit/antelope/chain/bytes.hpp>
@@ -10,8 +11,22 @@
 #include <dwarfkit/antelope/chain/float.hpp>
 #include <dwarfkit/antelope/chain/name.hpp>
 #include <dwarfkit/antelope/chain/time.hpp>
+#include <dwarfkit/antelope/chain/transaction.hpp>
 
 using namespace dwarfkit;
+
+namespace {
+
+struct TestTransfer {
+    DK_STRUCT("transfer")
+    Name from;
+    Name to;
+    Asset quantity;
+    std::string memo;
+    DK_FIELDS(from, to, quantity, memo)
+};
+
+}  // namespace
 
 static_assert("foo"_n == Name::from("foo"));
 static_assert("eosio.token"_n.value == Name::from("eosio.token").value);
@@ -188,6 +203,361 @@ TEST_SUITE("chain") {
         CHECK(value.toString() == "0x" + hex);
         CHECK(Float128::from("0x" + hex).value() == value);
         CHECK(Float128::from("beef").error().message == "Invalid float128");
+    }
+
+    TEST_CASE("transaction") {
+        const auto action = Action::from(json{{"authorization", json::array()},
+                                              {"account", "eosio.token"},
+                                              {"name", "transfer"}},
+                                         TestTransfer{.from = "foo"_n,
+                                                      .to = "bar"_n,
+                                                      .quantity = "1.0000 EOS"_asset,
+                                                      .memo = "hello"})
+                                .value();
+        CHECK(action.abi != nullptr);
+        const auto transaction =
+            Transaction::from(json{{"ref_block_num", 0},
+                                   {"ref_block_prefix", 0},
+                                   {"expiration", 0},
+                                   {"actions", json::array({Serializer::objectify(action)})}})
+                .value();
+        CHECK(transaction.id().hexString() ==
+              "97b4d267ce0e0bd6c78c52f85a27031bd16def0920703ca3b72c28c2c5a1a79b");
+        const auto transfer = transaction.actions[0].decodeData<TestTransfer>().value();
+        CHECK(transfer.from.toString() == "foo");
+
+        json signedJson = Serializer::objectify(transaction);
+        signedJson["signatures"] = json::array(
+            {"SIG_K1_KdNTcLLSyzUFC4AdMxEDn58X8ZN368euanvet4jucUdSPXvLkgsG32tpcqVvnDR9Xv1f7HsTm6"
+             "kocjeZzFGvUSc2yCbdEA"});
+        const auto signedTx = SignedTransaction::from(signedJson).value();
+        CHECK(signedTx.id().hexString() == transaction.id().hexString());
+    }
+
+    TEST_CASE("any transaction") {
+        const json tx = {
+            {"delay_sec", 0},
+            {"expiration", "2020-07-01T17:32:13"},
+            {"max_cpu_usage_ms", 0},
+            {"max_net_usage_words", 0},
+            {"ref_block_num", 55253},
+            {"ref_block_prefix", 3306698594},
+            {"actions",
+             json::array(
+                 {{{"account", "eosio.token"},
+                   {"name", "transfer"},
+                   {"authorization", json::array({{{"actor", "foo"}, {"permission", "active"}}})},
+                   {"data",
+                    {{"from", "donkeyhunter"},
+                     {"memo", "Anchor is the best! Thank you <3"},
+                     {"quantity", "0.0001 EOS"},
+                     {"to", "teamgreymass"}}}}})},
+        };
+        const json abiJson = {
+            {"structs", json::array({{{"base", ""},
+                                      {"name", "transfer"},
+                                      {"fields", json::array({{{"name", "from"}, {"type", "name"}},
+                                                              {{"name", "to"}, {"type", "name"}},
+                                                              {{"name", "quantity"}, {"type", "asset"}},
+                                                              {{"name", "memo"}, {"type", "string"}}})}}})},
+            {"actions", json::array({{{"name", "transfer"},
+                                      {"type", "transfer"},
+                                      {"ricardian_contract", ""}}})},
+        };
+        const auto abi = ABI::from(abiJson).value();
+        const auto r1 = Transaction::from(tx, abi).value();
+        const auto r2 =
+            [&] {
+                std::vector<AbiProviderEntry> entries;
+                AbiProviderEntry entry;
+                entry.contract = "eosio.token"_n;
+                entry.abi = abi;
+                entries.push_back(entry);
+                return Transaction::from(tx, entries).value();
+            }();
+        CHECK(r1.equals(r2));
+        // deepEqual semantics: order-insensitive compare via unordered json
+        CHECK(nlohmann::json(r1.actions[0].decodeData(abi).value()) ==
+              nlohmann::json(tx["actions"][0]["data"]));
+        CHECK_FALSE(Transaction::from(tx).has_value());
+        CHECK_FALSE(
+            [&] {
+                std::vector<AbiProviderEntry> entries;
+                AbiProviderEntry entry;
+                entry.contract = Name::from("ethereum.token");
+                entry.abi = abi;
+                entries.push_back(entry);
+                return Transaction::from(tx, entries).has_value();
+            }());
+    }
+
+    TEST_CASE("action with no arguments") {
+        const json abiJson = {
+            {"structs", json::array({{{"name", "noop"}, {"base", ""}, {"fields", json::array()}}})},
+            {"actions", json::array({{{"name", "noop"},
+                                      {"type", "noop"},
+                                      {"ricardian_contract", ""}}})},
+        };
+        const auto abi = ABI::from(abiJson).value();
+        const json base = {{"account", "greymassnoop"},
+                           {"name", "noop"},
+                           {"authorization",
+                            json::array({{{"actor", "greymassfuel"}, {"permission", "cosign"}}})}};
+        json j1 = base;
+        j1["data"] = "";
+        json j2 = base;
+        j2["data"] = json::object();
+        json j3 = base;
+        j3["data"] = json::array();
+        const auto a1 = Action::from(j1, abi).value();
+        const auto a2 = Action::from(j2, abi).value();
+        const auto a3 = Action::from(j3, abi).value();
+        CHECK(a1.equals(a2));
+        CHECK(a1.equals(a3));
+    }
+
+    TEST_CASE("action can deserialize itself from abi") {
+        const json abiJson = {
+            {"structs", json::array({{{"name", "transfer"},
+                                      {"base", ""},
+                                      {"fields", json::array({{{"name", "from"}, {"type", "name"}},
+                                                              {{"name", "to"}, {"type", "name"}},
+                                                              {{"name", "quantity"}, {"type", "asset"}},
+                                                              {{"name", "memo"}, {"type", "string"}}})}}})},
+            {"actions", json::array({{{"name", "transfer"},
+                                      {"type", "transfer"},
+                                      {"ricardian_contract", ""}}})},
+        };
+        const auto abi = ABI::from(abiJson).value();
+        const auto action = Action::from(json{{"account", "eosio.token"},
+                                              {"name", "transfer"},
+                                              {"authorization",
+                                               json::array({{{"actor", "foo"},
+                                                             {"permission", "bar"}}})},
+                                              {"data",
+                                               {{"from", "foo"},
+                                                {"to", "bar"},
+                                                {"quantity", "1.0000 EOS"},
+                                                {"memo", "hello"}}}},
+                                         abi)
+                                .value();
+        CHECK(action.abi != nullptr);
+        const auto decoded = action.decoded().value();
+        CHECK(decoded["account"] == "eosio.token");
+        CHECK(decoded["data"]["from"] == "foo");
+        CHECK(decoded["data"]["quantity"] == "1.0000 EOS");
+    }
+
+    TEST_CASE("action does not exist in ABI") {
+        const auto abi = ABI::from(json::object()).value();
+        const auto result = Action::from(json{{"account", "foo"},
+                                              {"name", "bar"},
+                                              {"authorization",
+                                               json::array({{{"actor", "foo"},
+                                                             {"permission", "bar"}}})},
+                                              {"data", json::object()}},
+                                         abi);
+        CHECK_FALSE(result.has_value());
+        CHECK(result.error().message ==
+              "The action \"bar\" does not exist on the ABI provided.");
+    }
+
+    TEST_CASE("authority sorts mixed K1 and WA keys") {
+        // Reported in wharfkit/antelope#8, where localeCompare returns the wrong order.
+        const std::vector<std::string> input = {
+            "EOS5fMyAUopVJv88Wb4szbLH2ds65jiNCjv1XWRRyvrfR6oEBdZXk",
+            "PUB_WA_323xpHU17pKZ6VsygcdXxq7cgosxSyRU5KGevyjUNtw4m9Y63EzPs3SEVpsf7rjeVLa7",
+            "PUB_WA_4B6ZbE2hxTvcrndvS8758EjGqRMQqVoV4vBTGgvqi27HNw8xyQz6viKrGLNLcaiRmhmbuyu584Hf",
+            "PUB_WA_4vD5irsd1GdmTEhea5G8QideW3NqU8F5zgPLyD3wKDE7MUPAwo5nELCEbJEELDafLeV4Uz7djSFJ",
+            "PUB_WA_5Q6G5dqajZDkqDbgEUG7a7qMpe94P6LegYdf7h8yL9efjhC6ERWuFsJM1ueygEmXzaELBokrUeH8",
+            "PUB_WA_6wUAAJXLFc3edKhGb5DdWb3WmoLxLwFSspdiEYHvT6DN2X7zo6opCfv6TcAifvxRQdVYwcr84zMS",
+        };
+        json keys = json::array();
+        for (const auto& key : input) {
+            keys.push_back({{"key", key}, {"weight", 1}});
+        }
+        const auto auth = Authority::from(json{{"threshold", 1}, {"keys", keys}}).value();
+        const std::vector<std::string> expected = {
+            "PUB_K1_5fMyAUopVJv88Wb4szbLH2ds65jiNCjv1XWRRyvrfR6oDcpM7y",
+            "PUB_WA_4B6ZbE2hxTvcrndvS8758EjGqRMQqVoV4vBTGgvqi27HNw8xyQz6viKrGLNLcaiRmhmbuyu584Hf",
+            "PUB_WA_4vD5irsd1GdmTEhea5G8QideW3NqU8F5zgPLyD3wKDE7MUPAwo5nELCEbJEELDafLeV4Uz7djSFJ",
+            "PUB_WA_5Q6G5dqajZDkqDbgEUG7a7qMpe94P6LegYdf7h8yL9efjhC6ERWuFsJM1ueygEmXzaELBokrUeH8",
+            "PUB_WA_323xpHU17pKZ6VsygcdXxq7cgosxSyRU5KGevyjUNtw4m9Y63EzPs3SEVpsf7rjeVLa7",
+            "PUB_WA_6wUAAJXLFc3edKhGb5DdWb3WmoLxLwFSspdiEYHvT6DN2X7zo6opCfv6TcAifvxRQdVYwcr84zMS",
+        };
+        REQUIRE(auth.keys.size() == expected.size());
+        for (size_t i = 0; i < expected.size(); i++) {
+            CHECK(auth.keys[i].key.toString() == expected[i]);
+        }
+    }
+
+    TEST_CASE("authority sorts accounts and waits") {
+        const auto auth =
+            Authority::from(
+                json{{"threshold", 1},
+                     {"accounts",
+                      json::array(
+                          {{{"permission", {{"actor", "zzz"}, {"permission", "active"}}},
+                            {"weight", 1}},
+                           {{"permission", {{"actor", "aaa"}, {"permission", "zzz"}}},
+                            {"weight", 1}},
+                           {{"permission", {{"actor", "aaa"}, {"permission", "active"}}},
+                            {"weight", 1}}})},
+                     {"waits", json::array({{{"wait_sec", 3600}, {"weight", 1}},
+                                            {{"wait_sec", 60}, {"weight", 1}},
+                                            {{"wait_sec", 86400}, {"weight", 1}}})}})
+                .value();
+        REQUIRE(auth.accounts.size() == 3);
+        CHECK(auth.accounts[0].permission.toString() == "aaa@active");
+        CHECK(auth.accounts[1].permission.toString() == "aaa@zzz");
+        CHECK(auth.accounts[2].permission.toString() == "zzz@active");
+        REQUIRE(auth.waits.size() == 3);
+        CHECK(auth.waits[0].wait_sec == 60);
+        CHECK(auth.waits[1].wait_sec == 3600);
+        CHECK(auth.waits[2].wait_sec == 86400);
+    }
+
+    TEST_CASE("authority") {
+        const auto auth =
+            Authority::from(
+                json{{"threshold", 21},
+                     {"keys",
+                      json::array(
+                          {{{"key", "EOS6RrvujLQN1x5Tacbep1KAk8zzKpSThAQXBCKYFfGUYeABhJRin"},
+                            {"weight", 20}},
+                           {{"key", "PUB_R1_82ua5qburg82c9eWY1qZVNUAAD6VPHsTMoPMGDrk7s4BQgxEoc"},
+                            {"weight", 2}}})},
+                     {"waits", json::array({{{"wait_sec", 10}, {"weight", 1}}})}})
+                .value();
+        CHECK(auth.hasPermission("EOS6RrvujLQN1x5Tacbep1KAk8zzKpSThAQXBCKYFfGUYeABhJRin").value());
+        CHECK(auth.hasPermission("PUB_R1_82ua5qburg82c9eWY1qZVNUAAD6VPHsTMoPMGDrk7s4BQgxEoc", true)
+                  .value());
+        CHECK_FALSE(
+            auth.hasPermission("PUB_R1_82ua5qburg82c9eWY1qZVNUAAD6VPHsTMoPMGDrk7s4BQgxEoc")
+                .value());
+        CHECK_FALSE(
+            auth.hasPermission("PUB_K1_6E45rq9ZhnvnWNTNEEexpM8V8rqCjggUWHXJBurkVQSnEyCHQ9")
+                .value());
+        CHECK_FALSE(
+            auth.hasPermission("PUB_K1_6E45rq9ZhnvnWNTNEEexpM8V8rqCjggUWHXJBurkVQSnEyCHQ9", true)
+                .value());
+    }
+
+    TEST_CASE("packed transaction") {
+        // uncompressed packed transaction
+        const auto uncompressed = PackedTransaction::from(
+            json{{"packed_trx",
+                  "34b6c664cb1b3056b588000000000190e2a51c5f25af590000000000e94c4402308db3ee1bf7a889"
+                  "00000000a8ed3232e04c9bae3b75a88900000000a8ed323210e04c9bae3b75a889529e9d0f0001"
+                  "000000"}})
+                                    .value();
+        CHECK(uncompressed.getTransaction().has_value());
+
+        // zlib compressed packed transaction
+        const std::string compressedString =
+            "78dacb3d782c659f64208be036062060345879fad9aa256213401c8605cb2633322c79c8c0e8bd651e88bf"
+            "e2ad9191204c80e36d735716638b77330300024516b4";
+
+        // compressed without a compression flag cannot be read
+        const auto compressedError =
+            PackedTransaction::from(json{{"packed_trx", compressedString}}).value();
+        CHECK_FALSE(compressedError.getTransaction().has_value());
+
+        // with the flag it decodes
+        const auto compressedSuccess =
+            PackedTransaction::from(json{{"compression", 1}, {"packed_trx", compressedString}})
+                .value();
+        CHECK(compressedSuccess.getTransaction().has_value());
+        // and packing it back up round-trips through fromSigned
+        const auto tx = compressedSuccess.getTransaction().value();
+        const auto signedTx = SignedTransaction::from(Serializer::objectify(tx)).value();
+        const auto repacked =
+            PackedTransaction::fromSigned(signedTx, CompressionType::zlib).value();
+        CHECK(repacked.getTransaction().value().id().hexString() == tx.id().hexString());
+    }
+
+    TEST_CASE("fixed size array") {
+        const json data = {
+            {"version", "eosio::abi/1.2"},
+            {"types", json::array()},
+            {"structs",
+             json::array(
+                 {{{"name", "basic"},
+                   {"base", ""},
+                   {"fields", json::array({{{"name", "input"}, {"type", "int32"}}})}},
+                  {{"name", "array"},
+                   {"base", ""},
+                   {"fields", json::array({{{"name", "input"}, {"type", "int32[]"}}})}},
+                  {{"name", "fixed"},
+                   {"base", ""},
+                   {"fields", json::array({{{"name", "input"}, {"type", "int32[4]"}}})}}})},
+            {"actions",
+             json::array({{{"name", "basic"}, {"type", "basic"}, {"ricardian_contract", ""}},
+                          {{"name", "array"}, {"type", "array"}, {"ricardian_contract", ""}},
+                          {{"name", "fixed"}, {"type", "fixed"}, {"ricardian_contract", ""}}})},
+            {"tables", json::array()},
+            {"ricardian_clauses", json::array()},
+            {"error_messages", json::array()},
+            {"abi_extensions", json::array()},
+            {"variants", json::array()},
+            {"action_results",
+             json::array({{{"name", "basic"}, {"result_type", "int32"}},
+                          {{"name", "array"}, {"result_type", "int32[]"}},
+                          {{"name", "fixed"}, {"result_type", "int32[4]"}}})},
+        };
+
+        const auto abi = ABI::from(data).value();
+        CHECK(abi.structs[0].fields[0].type == "int32");
+        CHECK(abi.structs[1].fields[0].type == "int32[]");
+        CHECK(abi.structs[2].fields[0].type == "int32[4]");
+        CHECK(abi.action_results[0].result_type == "int32");
+        CHECK(abi.action_results[1].result_type == "int32[]");
+        CHECK(abi.action_results[2].result_type == "int32[4]");
+
+        const auto encoded = Serializer::encode(abi).value();
+        const auto decoded = Serializer::decode<ABI>(encoded).value();
+        CHECK(decoded.equals(abi));
+        CHECK(decoded.structs[2].fields[0].type == "int32[4]");
+        CHECK(decoded.action_results[2].result_type == "int32[4]");
+
+        CHECK(Serializer::encode(json{{"input", 1}}, "basic", abi).value().hexString() ==
+              "01000000");
+        CHECK(Serializer::encode(json{{"input", {1, 2, 3, 4}}}, "array", abi).value().hexString() ==
+              "0401000000020000000300000004000000");
+        CHECK(Serializer::encode(json{{"input", {1, 2, 3, 4}}}, "fixed", abi).value().hexString() ==
+              "01000000020000000300000004000000");
+    }
+
+    TEST_CASE("transaction signingDigest and signingData") {
+        const auto transaction =
+            Transaction::from(
+                json{{"expiration", "1970-01-01T00:00:00"},
+                     {"ref_block_num", 0},
+                     {"ref_block_prefix", 0},
+                     {"max_net_usage_words", 0},
+                     {"max_cpu_usage_ms", 0},
+                     {"delay_sec", 0},
+                     {"context_free_actions", json::array()},
+                     {"transaction_extensions", json::array()},
+                     {"actions",
+                      json::array({{{"account", "eosio.token"},
+                                    {"name", "transfer"},
+                                    {"authorization",
+                                     json::array({{{"actor", "corecorecore"},
+                                                   {"permission", "active"}}})},
+                                    {"data",
+                                     "a02e45ea52a42e4580b1915e5d268dcaba0100000000000004454f5300"
+                                     "00000019656f73696f2d636f7265206973207468652062657374203c33"}}})}})
+                .value();
+        const auto chainId = Checksum256::from(
+                                 "2a02a0053e5a8cf73a56ba0fda11e4d92e0238a4a2aa74fccf46d5a910746840")
+                                 .value();
+        const auto data = transaction.signingData(chainId);
+        CHECK(data.hexString().starts_with(
+            "2a02a0053e5a8cf73a56ba0fda11e4d92e0238a4a2aa74fccf46d5a910746840"));
+        CHECK(data.hexString().ends_with(std::string(64, '0')));
+        CHECK(transaction.signingDigest(chainId).hexString() ==
+              Checksum256::hash(data).hexString());
     }
 
     TEST_CASE("extended asset") {
