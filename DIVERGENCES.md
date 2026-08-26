@@ -30,3 +30,9 @@ Every intentional deviation from Wharfkit, one line of reason each. Anything not
 | TS type guards (`Bytes.isBytes`, `isInstanceOf`, `arrayEquals`) | Dropped | C++ overload resolution and `operator==` replace runtime type sniffing |
 | `Base58.DecodingError` subclass with `code`/`info` fields | `Error{kind: Invalid}` with `details["code"]` = "E_CHECKSUM"/"E_INVALID" plus the info pairs (byte arrays as hex strings) | Single error type across the library |
 | `Bytes` shares the underlying buffer between instances | Value semantics, always copies | C++ vectors; upstream even warns about the sharing |
+| `Int8..UInt64` wrapper classes with C++11-emulating operators | Native `int8_t..uint64_t`; `Int128`/`UInt128`/`VarInt`/`VarUInt` remain real types; `intToJSON` keeps the >32-bit-becomes-string rule | The wrappers reimplement C++ in JS; the port runs on the original |
+| `Float32`/`Float64` wrapper classes | Native `float`/`double`; toString/toJSON rules live in the serializer builtins | BLUEPRINT.md 5.6 type map |
+| `Asset.value` getter throws when units exceed 53 bits | `Asset::value()` returns the full double; the strict 53-bit error stays on `Symbol::convertUnits` | C++ doubles have no 53-bit API cliff; parity kept where the upstream test asserts |
+| `toFixed` rounds decimal ties toward positive infinity | `Symbol::convertFloat` uses printf rounding (ties to even) | Differs only when value*10^precision is exactly representable at a .5 tie |
+| `TimePoint.equals(badString)` throws | Returns false | equals returning Result would break comparison ergonomics |
+| `_n` name literal accepts what `Name.from` accepts (silent mangling) | `_n`, `_asset`, `_symbol` are consteval and reject invalid literals at compile time | Compile-time validation is free and matches CDT |
