@@ -48,7 +48,7 @@ One row per upstream repo (all of github.com/wharfkit at 2026-08-26, plus greyma
 | roborovski | 1.1.0 | 2025112 | port | - | Phase 4 extras; Roborovski API client |
 | sealed-messages | 1.2.0 | 8fc32b0 | port | - | Phase 4 extras; Shamir secret sharing + sealed messages (the blueprint's "Shamir package") |
 | session | 1.6.1 | 467f049 | port | - | Phase 3 |
-| signing-request | 3.4.0 | 18a13f7 | port | - | Phase 2 |
+| signing-request | 3.4.0 | 18a13f7 | port | done 3.4.0 | request.ts and misc.ts green with exact URI/digest/proof vectors |
 | skill | - | f87fb83 | skip | - | Claude Code skill for wharfkit development, no library code |
 | starter | - | 253797a | reference | - | starter kit |
 | svelte-components | 0.7.0 | e338750 | skip | - | web UI components |

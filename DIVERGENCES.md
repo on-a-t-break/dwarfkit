@@ -52,3 +52,9 @@ Every intentional deviation from Wharfkit, one line of reason each. Anything not
 | Telos/WAX account objects re-declare `voter_info` on a subclass | `BasicAccountObject<VoterInfo>` template | Field re-declaration has no C++ equivalent |
 | `ABICache.pending` promise map | A mutex; concurrent getAbi calls for one account serialize | BLUEPRINT.md 6.3; no promises to share |
 | mock-data `makeMockFetch` records `{method, body}` without empty headers | `MockFetchProvider` omits the headers key when empty | Matches the recorded fixture hashes |
+| `SigningRequestEncodingOptions.zlib` provider object (compression only when passed) | `bool zlib = true` (built-in zlib); a request decoded/created keeps its flag for later `encode()` | zlib is vendored anyway; pass `{.zlib = false}` for parity with TS call sites that omit the provider |
+| `SigningRequest.create` / `identity` / `fromPayload` are async (`createSync` variants exist) | One blocking method each | BLUEPRINT.md 2: no promises |
+| Placeholder resolution rebuilds typed action data via `Struct.from` walking decoded objects with `Name.isInstance` checks | JSON walk over the decoded action data replacing exact strings `............1` / `............2` | The decoded representation is json; bare strings equal to a placeholder name only occur as name values |
+| `SigningRequest.data` is a `RequestData` struct instance whose `req` variant differs by version | `std::variant<RequestDataV2, RequestDataV3>` member | The two ABI layouts (IdentityV2/IdentityV3) need distinct C++ types |
+| Checksum classes are final in dwarfkit up to Phase 1 | `final` removed from `Checksum160/256/512` | `ChainId extends Checksum256` upstream |
+| `SigningRequest.getInfoKey(key)` returns string, `(key, type)` overloads infer typed decode | `getInfoKey(key)` string, `getInfoKey<T>(key)` typed, `getInfoKey(key, type)` dynamic json | C++ overload set replaces TS union-typed params |

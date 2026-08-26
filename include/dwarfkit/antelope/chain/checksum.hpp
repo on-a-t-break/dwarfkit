@@ -57,7 +57,7 @@ public:
     constexpr bool operator==(const ChecksumBase&) const = default;
 };
 
-class Checksum256 final : public ChecksumBase<32, Checksum256> {
+class Checksum256 : public ChecksumBase<32, Checksum256> {
 public:
     static constexpr std::string_view abiName = "checksum256";
     using ChecksumBase::ChecksumBase;
@@ -66,7 +66,7 @@ public:
     static Checksum256 hash(const Bytes& data) { return hash(std::span<const uint8_t>(data.array)); }
 };
 
-class Checksum512 final : public ChecksumBase<64, Checksum512> {
+class Checksum512 : public ChecksumBase<64, Checksum512> {
 public:
     static constexpr std::string_view abiName = "checksum512";
     using ChecksumBase::ChecksumBase;
@@ -75,7 +75,7 @@ public:
     static Checksum512 hash(const Bytes& data) { return hash(std::span<const uint8_t>(data.array)); }
 };
 
-class Checksum160 final : public ChecksumBase<20, Checksum160> {
+class Checksum160 : public ChecksumBase<20, Checksum160> {
 public:
     static constexpr std::string_view abiName = "checksum160";
     using ChecksumBase::ChecksumBase;

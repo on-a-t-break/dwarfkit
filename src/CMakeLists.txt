@@ -35,6 +35,10 @@ add_library(dwarfkit STATIC
   antelope/api/v1/types.cpp
   abicache/abicache.cpp
   common/chains.cpp
+  signing_request/base64u.cpp
+  signing_request/chain_id.cpp
+  signing_request/identity_proof.cpp
+  signing_request/signing_request.cpp
 )
 
 target_include_directories(dwarfkit PUBLIC
