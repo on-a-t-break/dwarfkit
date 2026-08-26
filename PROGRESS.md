@@ -6,7 +6,8 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 
 - Phase: 1 (antelope core)
 - In flight: nothing
-- Next: `core/` item (Result, Error, json helpers, Bytes, hex, base64, base58, hashes, CSPRNG shim)
+- Next: chain types item (integers, Name, Asset/Symbol, time, checksums, BlockId, Blob)
+- Notes: base64 helper deferred to first call site (Blob/ESR). CancelToken deferred to protocol-esr. jsonParse helper deferred to first call site.
 
 ## Phase 0: Bootstrap
 
@@ -16,7 +17,7 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 
 ## Phase 1: antelope core
 
-- [ ] `core/`: `Result`, `Error`, `json` helpers, `Bytes`, hex, base64, base58 (all check variants), sha256/sha512/ripemd160/hmac, CSPRNG shim.
+- [x] `core/`: `Result`, `Error`, `json` helpers, `Bytes`, hex, base64, base58 (all check variants), sha256/sha512/ripemd160/hmac, CSPRNG shim. (base64 deferred to first call site)
 - [ ] Chain types: integers (incl. 128-bit, var ints, `toJSON` rules), `Float128`, `Name` + `_n`, `Asset`/`Symbol`/`SymbolCode`/`ExtendedAsset` + literals, time types, checksums, `BlockId`, `Blob`.
 - [ ] Crypto: K1 via libsecp256k1 with the elliptic-compatible nonce function; R1 via trezor-crypto; WA parse/verify; `PublicKey`, `PrivateKey`, `Signature` full method sets; key string formats.
 - [ ] `ABI` model and `resolveType`, `ABIEncoder`/`ABIDecoder`, builtins, `Serializer` (static, dynamic, `synthesize`, `stringify`), `DK_STRUCT`/`DK_FIELDS`/`DK_VARIANT`/`DK_TYPE_ALIAS`/`BinaryExtension`, `Action`, `Transaction`, `SignedTransaction`, `PackedTransaction`, authority types.

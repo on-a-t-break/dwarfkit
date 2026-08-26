@@ -24,3 +24,9 @@ Every intentional deviation from Wharfkit, one line of reason each. Anything not
 ## Found while porting
 
 (append here, newest last)
+
+| Wharfkit | Dwarfkit | Why |
+|---|---|---|
+| TS type guards (`Bytes.isBytes`, `isInstanceOf`, `arrayEquals`) | Dropped | C++ overload resolution and `operator==` replace runtime type sniffing |
+| `Base58.DecodingError` subclass with `code`/`info` fields | `Error{kind: Invalid}` with `details["code"]` = "E_CHECKSUM"/"E_INVALID" plus the info pairs (byte arrays as hex strings) | Single error type across the library |
+| `Bytes` shares the underlying buffer between instances | Value semantics, always copies | C++ vectors; upstream even warns about the sharing |
