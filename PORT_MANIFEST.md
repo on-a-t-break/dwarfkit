@@ -6,7 +6,7 @@ One row per upstream repo (all of github.com/wharfkit at 2026-08-26, plus greyma
 
 | Repo | Version | Commit | Classification | Status | Notes |
 |---|---|---|---|---|---|
-| abicache | 1.2.4 | b8fd381 | port | - | Phase 2 |
+| abicache | 1.2.4 | b8fd381 | port | done 1.2.4 | tests green against copied fixtures |
 | account | 1.4.1 | fd370fe | port | - | Phase 4 |
 | account-creation-plugin-anchor | 1.4.0 | d5138c2 | port | - | Phase 3; the blueprint's "AccountCreationPluginGreymass" (Greymass account creation service) |
 | account-creation-plugin-jungle4 | 1.2.0 | b9f2fab | port | - | Phase 3 |
@@ -23,7 +23,7 @@ One row per upstream repo (all of github.com/wharfkit at 2026-08-26, plus greyma
 | chain-logo | - | 47e69e4 | reference | - | logo CDN assets |
 | chains | - | EMPTY | skip | - | empty repository |
 | cli | 2.11.0 | 0a2848c | port | - | Phase 6, as dkgen (generate subcommand only) |
-| common | 1.5.0 | 31f7106 | port | - | Phase 2 |
+| common | 1.5.0 | 31f7106 | port | done 1.5.0 | Chains/ChainDefinition/explorer/logo/token; Canceled maps to ErrorKind::Canceled |
 | conformance | 0.1.0 | 39834b9 | reference | - | float-op oracle contract on Jungle 4 (conform.gm); optional DK_LIVE_TESTS consumer for float parity |
 | console-renderer | 0.1.1 | b7146d3 | reference | - | informs ConsoleUserInterface |
 | contract | 1.3.0 | 2c98897 | port | - | Phase 4 |
@@ -40,7 +40,7 @@ One row per upstream repo (all of github.com/wharfkit at 2026-08-26, plus greyma
 | issues | - | 4823d3e | skip | - | meta repo, no code |
 | js | 4.0.0-rc2 | 639cf3a | reference | - | upcoming all-in-one v4 bundle; watch for API changes |
 | login-plugin-template | 1.0.0 | 0610c4b | reference | - | template; informs examples/ |
-| mock-data | 1.3.1 | 9cf701d | port | - | Phase 1; MockFetchProvider (makeMockFetch key scheme) + recorded fixtures |
+| mock-data | 1.3.1 | 9cf701d | port | wip | MockFetchProvider + makeClient ported (tests/util); session mocks land with the session kit |
 | msigs | 0.3.1 | c8ccca7 | port | - | Phase 4 extras; Roborovski msigs API client. NOTE: the blueprint's "msig proposal transact plugin" does not exist as an org repo |
 | protocol-esr | 1.6.1 | 1b61ed2 | port | - | Phase 2 |
 | protocol-scatter | 1.4.0 | 846bd39 | skip | - | browser window injection |

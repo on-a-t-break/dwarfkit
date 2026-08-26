@@ -4,16 +4,6 @@
 
 namespace dwarfkit::api::v1 {
 
-Result<AccountPermission> AccountObject::getPermission(const Name& permission) const {
-    for (const auto& entry : permissions) {
-        if (entry.perm_name == permission) {
-            return entry;
-        }
-    }
-    return err(ErrorKind::NotFound, "Unknown permission " + permission.toString() + " on account " +
-                                        account_name.toString() + ".");
-}
-
 Result<TrxVariant> TrxVariant::from(const json& data) {
     TrxVariant rv;
     if (data.is_string()) {

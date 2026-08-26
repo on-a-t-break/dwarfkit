@@ -48,3 +48,7 @@ Every intentional deviation from Wharfkit, one line of reason each. Anything not
 | api `FetchProvider` class | `FetchAPIProvider` (wraps the transport `FetchProvider` interface) | Two types cannot share the name in one namespace; the transport interface keeps the blueprint-pinned name |
 | `BoolType.from` passes any value through | `bool` fromJSON accepts booleans and 0/1 numbers, rejects the rest | nodeos emits 0/1 for some bool fields |
 | Untyped API interfaces (`PushTransactionResponse`, `SendTransactionResponse`, `GetAbiResponse`, params bags) | Plain `json` | Upstream never runs them through the serializer either |
+| `ChainDefinition.accountDataType` (a class reference) | Dropped; chain-specific account types are template parameters (`BasicAccountObject<TelosAccountVoterInfo>`) at call sites | C++ cannot store a type in a struct |
+| Telos/WAX account objects re-declare `voter_info` on a subclass | `BasicAccountObject<VoterInfo>` template | Field re-declaration has no C++ equivalent |
+| `ABICache.pending` promise map | A mutex; concurrent getAbi calls for one account serialize | BLUEPRINT.md 6.3; no promises to share |
+| mock-data `makeMockFetch` records `{method, body}` without empty headers | `MockFetchProvider` omits the headers key when empty | Matches the recorded fixture hashes |

@@ -33,6 +33,8 @@ add_library(dwarfkit STATIC
   antelope/api/v1/chain.cpp
   antelope/api/v1/history.cpp
   antelope/api/v1/types.cpp
+  abicache/abicache.cpp
+  common/chains.cpp
 )
 
 target_include_directories(dwarfkit PUBLIC

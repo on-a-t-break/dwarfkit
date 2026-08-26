@@ -112,7 +112,10 @@ struct GetRawAbiResponse {
     DK_FIELDS(account_name, code_hash, abi_hash, abi)
 };
 
-struct AccountObject {
+// Templated on the voter info type: chains like Telos and WAX extend
+// voter_info (upstream re-declares the field on a subclass).
+template <class VoterInfo>
+struct BasicAccountObject {
     DK_STRUCT("account_object")
     // The account name of the retrieved account
     Name account_name;
@@ -139,18 +142,28 @@ struct AccountObject {
     std::optional<AccountTotalResources> total_resources;
     std::optional<AccountSelfDelegatedBandwidth> self_delegated_bandwidth;
     std::optional<AccountRefundRequest> refund_request;
-    std::optional<AccountVoterInfo> voter_info;
+    std::optional<VoterInfo> voter_info;
     std::optional<AccountRexInfo> rex_info;
     DK_FIELDS(account_name, head_block_num, head_block_time, privileged, last_code_update, created,
               core_liquid_balance, ram_quota, net_weight, cpu_weight, net_limit, cpu_limit,
               subjective_cpu_bill_limit, ram_usage, permissions, total_resources,
               self_delegated_bandwidth, refund_request, voter_info, rex_info)
 
-    Result<AccountPermission> getPermission(const Name& permission) const;
+    Result<AccountPermission> getPermission(const Name& permission) const {
+        for (const auto& entry : permissions) {
+            if (entry.perm_name == permission) {
+                return entry;
+            }
+        }
+        return err(ErrorKind::NotFound, "Unknown permission " + permission.toString() +
+                                            " on account " + account_name.toString() + ".");
+    }
     Result<AccountPermission> getPermission(std::string_view permission) const {
         return getPermission(Name::from(permission));
     }
 };
+
+using AccountObject = BasicAccountObject<AccountVoterInfo>;
 
 struct AccountByAuthorizersRow {
     DK_STRUCT("account_by_authorizers_row")
