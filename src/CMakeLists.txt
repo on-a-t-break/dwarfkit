@@ -79,6 +79,7 @@ add_library(dwarfkit STATIC
   plugins/wallet/anchor_mode.cpp
   plugins/wallet/anchor_translations.cpp
   plugins/wallet/anchor_transports.cpp
+  plugins/wallet/cleos.cpp
   plugins/wallet/cloudwallet.cpp
   plugins/wallet/cloudwallet_translations.cpp
   plugins/wallet/cloudwallet_types.cpp

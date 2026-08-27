@@ -133,3 +133,7 @@ Every intentional deviation from Wharfkit, one line of reason each. Anything not
 - validateModifications compares the new action's authorization actor by value. Upstream compares Name objects with ===, which is reference equality and never matches, so its added-action rules never actually reject anything; the port implements the documented intent.
 - `localStorage.setItem('connectedType', 'web')` persists into the plugin data. The deprecated mobileAppConnectConfig option is dropped entirely rather than accepted-and-ignored.
 - waxSign errors "The Cloud Wallet failed to respond" when the response lacks serializedTransaction, mirroring the upstream isCallback key check. When the transaction was modified, the re-resolved request is built from the returned transaction (same construction as upstream).
+
+## wallet-plugin-cleos
+
+- The copy-to-clipboard button's onClick (navigator.clipboard) has no meaning here; the button element keeps its label for UIs that can render a copy affordance. The prompted command and decoded transaction json (4-space indent, actions replaced in place) match upstream.
