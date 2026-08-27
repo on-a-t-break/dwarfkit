@@ -66,7 +66,7 @@ One row per upstream repo (all of github.com/wharfkit at 2026-08-26, plus greyma
 | ui-plugin-template | 0.1.0 | 0906118 | reference | - | template |
 | wallet-plugin-anchor | 1.7.3 | c460bc2 | port | done 1.7.3 | native+web transports; popups/mode chooser become openLink hook + option-driven mode (DIVERGENCES) |
 | wallet-plugin-cleos | 1.2.0 | 3c86de8 | port | - | Phase 5, dev only |
-| wallet-plugin-cloudwallet | 1.6.5 | 5017944 | port | - | Phase 5; protocol layer + WebViewBridge interface |
+| wallet-plugin-cloudwallet | 1.6.5 | 5017944 | port | done 1.6.5 | popup/postMessage becomes WebViewBridge; login-and-sign covered with a scripted bridge |
 | wallet-plugin-gatewallet | 1.1.0 | d59fa2a | skip | - | Scatter browser protocol |
 | wallet-plugin-imtoken | 1.1.0 | 51f1d3d | skip | - | Scatter browser protocol |
 | wallet-plugin-ledger | 0.1.0 | a468070 | skip | - | WebUSB/WebHID transport; revisit only if native HID is demanded |

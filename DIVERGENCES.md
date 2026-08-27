@@ -126,3 +126,10 @@ Every intentional deviation from Wharfkit, one line of reason each. Anything not
 ## qrcodegen
 
 - Nayuki's QR Code generator (MIT) is vendored in third_party/qrcodegen for the examples; examples/anchor_login renders prompt qr elements as half-block terminal QR codes.
+
+## wallet-plugin-cloudwallet
+
+- The popup window + window.postMessage exchange becomes the WebViewBridge embedder interface (open/awaitMessage/postMessage/close). The close-listener interval and MessageEvent origin/source validation are the bridge implementation's responsibility; bridge timeouts and closes map to the upstream timeout/closed error strings. The TRANSACTION message carries the serialized transaction as a hex string (a structured-clone Uint8Array has no json form); responses accept hex, arrays, or index-keyed objects.
+- validateModifications compares the new action's authorization actor by value. Upstream compares Name objects with ===, which is reference equality and never matches, so its added-action rules never actually reject anything; the port implements the documented intent.
+- `localStorage.setItem('connectedType', 'web')` persists into the plugin data. The deprecated mobileAppConnectConfig option is dropped entirely rather than accepted-and-ignored.
+- waxSign errors "The Cloud Wallet failed to respond" when the response lacks serializedTransaction, mirroring the upstream isCallback key check. When the transaction was modified, the re-resolved request is built from the returned transaction (same construction as upstream).
