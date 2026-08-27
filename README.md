@@ -112,3 +112,16 @@ reference/          pinned upstream clones the port is checked against
 ```
 
 Governance: [BLUEPRINT.md](BLUEPRINT.md) is the executable contract, [PROGRESS.md](PROGRESS.md) tracks phase status, [PORT_MANIFEST.md](PORT_MANIFEST.md) pins upstream versions, [DIVERGENCES.md](DIVERGENCES.md) logs every intentional deviation.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the porting protocol, build
+commands and style rules, and [SECURITY.md](SECURITY.md) for reporting
+vulnerabilities privately.
+
+## License
+
+[MIT](LICENSE). Dwarfkit is a port of [Wharfkit](https://github.com/wharfkit)
+by Greymass, whose BSD-style notice is retained in [NOTICE.md](NOTICE.md)
+along with the licenses of vendored dependencies. Dwarfkit is not affiliated
+with or endorsed by Greymass.
