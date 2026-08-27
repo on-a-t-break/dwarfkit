@@ -16,7 +16,7 @@ Every intentional deviation from Wharfkit, one line of reason each. Anything not
 | `BrowserLocalStorage` | `FileSessionStorage`, `MemorySessionStorage` | No browser |
 | Class instances passed by reference | `std::shared_ptr` for kits, plugins, providers, UI; value types for chain types | C++ ownership |
 | String literals for names | `"eosio.token"_n` also accepted | One-liner ergonomics, matches CDT |
-| pako (zlib) | miniz | Compressed ESR bytes may differ; parity is asserted on decoded payloads, not compressed URIs |
+| pako (zlib) | Vendored zlib 1.3.1 (the blueprint said miniz; see the porting table) | pako emits byte-identical streams to zlib, so packed transactions and ESR URIs stay byte-compatible |
 | `web-renderer` | Not ported | Engines render their own UI against the `UserInterface` contract |
 | Scatter, Wombat, TokenPocket, MetaMask wallet plugins, `protocol-scatter` | Not ported | Browser `window.*` injection protocols; impossible without a browser |
 | `WalletPluginCloudWallet` popup + `postMessage` | Protocol layer plus `WebViewBridge` interface; adapters supply the web view | No popups in a game engine |
@@ -82,7 +82,7 @@ Every intentional deviation from Wharfkit, one line of reason each. Anything not
 | `Resources.v1` property | `v1()` accessor returning the API view | C++ members cannot safely back-reference a movable parent |
 | `PowerUpStateResource.reserved` typed Int64 but asserted against floats | Truncating int64 division, asserted as 0 | The upstream assertion is vacuous (BN truncates both sides to 0) |
 | resource provider / autocorrect Transfer and BuyRAMBytes exports | Nested types on the plugin classes | Avoids colliding with the token kit's Transfer |
-| Plugin translation bundles (en/ko/zh-Hans/zh-Hant) | en embedded; other locales omitted | Keeps sources ASCII; add locales via ui.addTranslations |
+| Plugin translation bundles (en/ko/zh-Hans/zh-Hant) | Transact/account-creation plugins embed en only (add locales via ui.addTranslations); the anchor and cloudwallet wallet plugins embed all four upstream locales | Escaped-ASCII embedding arrived with the wallet plugins |
 | Resource provider 120s fee-prompt expiry timer | Not replicated (prompt has no timeout) | Upstream marks it TODO-remove; needs a timer thread |
 | finality plugins schedule polling with setTimeout (checker's hook returns a never-resolving promise) | Blocking waits inside the afterBroadcast hook with configurable delays; the checker returns after its final prompt | No event loop; transact runs on a worker (BLUEPRINT.md 5.2) |
 | autocorrect races a cancelable "Checking transaction" prompt against the correction | ui.status message before correcting | Blocking prompts cannot race |
@@ -162,3 +162,8 @@ Every intentional deviation from Wharfkit, one line of reason each. Anything not
 
 - ABIDecoder's bounds-check helper is ensureBytes (was ensure): UE defines ensure() as a macro and BLUEPRINT.md bans that name from dwarfkit headers.
 - Both adapters ship as source only; there is no UE or godot-cpp toolchain in this repo, so they compile inside an engine project against the prebuilt static library (build instructions in each adapter README). The blueprint interfaces map 1:1; login responses auto-select the first wallet plugin and the chain/permission passed to the async node, since an interactive chooser is the embedder's UI concern.
+
+## packaging (Phase 8)
+
+- find_package(Dwarfkit) uses a hand-rolled config creating imported targets from the installed archives (dwarfkit, dk_trezor_crypto, dk_zlib, secp256k1, secp256k1_precomputed) instead of a CMake export set: the FetchContent-built secp256k1 needs no export support of its own, and the object-library secp256k1_precomputed installs through a wrapper archive. The config forwards cxx_std_20 and MSVC's /Zc:preprocessor (the DK_FIELDS variadic macros need the conformant preprocessor in consumers too).
+- The vendored tl::expected and nlohmann headers install alongside dwarfkit's (they appear in public headers). dwarfkit_curl is not installed; engines bring their own transports and other consumers can add_subdirectory/FetchContent the repo.

@@ -4,7 +4,7 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 
 ## Current state
 
-- Phase: 7 complete (Unreal plugin + Godot GDExtension source; engine-buildable only inside an engine project). Next: Phase 8 packaging and docs.
+- Phase: 8 complete. All blueprint phases done: 422 test cases / 2779 assertions green, find_package install verified with an out-of-tree consumer. Remaining deferred items: antelope p2p module, strictExtensions decoding (tracked below).
 - In flight: nothing
 - Notes: CancelToken deferred to protocol-esr. strictExtensions decoding mode deferred until the session kit needs it (part of test/serializer.ts 'binary extensions' not ported). K1 byte-parity vectors verified against elliptic via node (scratchpad/elliptest). miniz was replaced with vendored zlib 1.3.1 for byte parity with pako (fixture hashes + ESR URIs); see DIVERGENCES.md.
 
@@ -63,7 +63,7 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 
 ## Phase 8: packaging and docs
 
-- [ ] `find_package(Dwarfkit)` install, versioning, README with the TS-to-C++ parity matrix, migration notes, `DIVERGENCES.md` final pass.
+- [x] `find_package(Dwarfkit)` install, versioning, README with the TS-to-C++ parity matrix, migration notes, `DIVERGENCES.md` final pass. (hand-rolled package config over the installed archives, verified by building and running an out-of-tree consumer against the installed prefix; README rewritten with the parity matrix and migration notes; DIVERGENCES stale rows corrected and packaging section added)
 
 ## Session log
 

@@ -103,6 +103,8 @@ if(WIN32)
 endif()
 
 target_compile_features(dwarfkit PUBLIC cxx_std_20)
+# consumers compile DK_FIELDS variadic macros too
+target_compile_options(dwarfkit PUBLIC $<$<CXX_COMPILER_ID:MSVC>:/Zc:preprocessor>)
 dk_warnings(dwarfkit)
 
 if(DK_WITH_CURL)
