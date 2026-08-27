@@ -70,6 +70,10 @@ add_library(dwarfkit STATIC
   contract/table.cpp
   contract/utils.cpp
   actionstream/client.cpp
+  atomicassets/endpoints.cpp
+  atomicassets/kits.cpp
+  atomicassets/objects.cpp
+  atomicassets/utility.cpp
   token/system_token.cpp
   token/token.cpp
   account/system_contract.cpp

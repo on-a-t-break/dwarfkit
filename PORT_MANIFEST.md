@@ -17,7 +17,7 @@ One row per upstream repo (all of github.com/wharfkit at 2026-08-26, plus greyma
 | antelope-rs | - | 8ff21c7 | reference | - | Rust port; cross-check when the TS is ambiguous |
 | api-client-template | 0.0.0 | 367bbc9 | reference | - | template |
 | assets | - | 52cc2be | reference | - | brand/media assets, no code |
-| atomicassets | 1.3.1 | 6b3a08e | port | - | Phase 4 extras |
+| atomicassets | 1.3.1 | 6b3a08e | port | done 1.3.1 | endpoints json in/out; contracts are dkgen output; objects/kits typed |
 | bundle | 0.1.2 | 2e5e6fb | reference | - | npm meta-bundle, no logic |
 | buoy-client | 1.0.4 | 7dc9c71 | port | done 1.0.4 | send/receive/Listener as blocking calls over the transport interfaces; live cb.anchor.link round-trip verified |
 | chain-logo | - | 47e69e4 | reference | - | logo CDN assets |
