@@ -1,6 +1,8 @@
 // Port of the dynamic (json + type name + ABI) paths of antelope
 // src/serializer/encoder.ts (encodeAny) and decoder.ts (decodeBinary,
 // decodeObject).
+#include <set>
+
 #include <dwarfkit/antelope/serializer.hpp>
 
 #include <dwarfkit/antelope/chain/abi.hpp>
@@ -20,6 +22,7 @@ struct PathEntry {
 
 struct Context {
     std::vector<PathEntry> codingPath;
+    bool strictExtensions = false;
 
     std::string path() const {
         std::string rv;
@@ -157,6 +160,58 @@ Result<void> encodeAny(const json& value, const Node& type, ABIEncoder& encoder,
     return encodeInner(value, type, encoder, ctx);
 }
 
+// ---- defaultValue (strictExtensions synthesis) -----------------------------
+
+Result<json> defaultValue(const Node& type, Context& ctx, std::set<std::string>& seen) {
+    if (type.isArray) {
+        return json::array();
+    }
+    if (type.isOptional) {
+        return json(nullptr);
+    }
+    const auto& types = builtinTypes();
+    const auto abiType = types.find(type.name);
+    if (abiType != types.end() && !type.fields && !type.variant && !type.ref) {
+        return abiType->second.defaultJSON();
+    }
+    if (seen.count(type.name)) {
+        return err(ErrorKind::Invalid, "Circular type reference");
+    }
+    seen.insert(type.name);
+    if (type.fields) {
+        const auto fields = type.allFields();
+        if (!fields) {
+            return err(ErrorKind::Invalid, "Invalid struct fields");
+        }
+        json rv = json::object();
+        for (const auto& [name, fieldType] : *fields) {
+            ctx.codingPath.push_back({name, false, fieldType});
+            DK_TRY(fieldDefault, defaultValue(*fieldType, ctx, seen));
+            rv[name] = std::move(fieldDefault);
+            ctx.codingPath.pop_back();
+        }
+        return rv;
+    }
+    if (type.variant && !type.variant->empty()) {
+        // upstream defaults to the first alternative with a fresh seen set
+        std::set<std::string> variantSeen;
+        DK_TRY(inner, defaultValue(*(*type.variant)[0], ctx, variantSeen));
+        return json::array({(*type.variant)[0]->typeName(), std::move(inner)});
+    }
+    if (type.ref) {
+        ctx.codingPath.push_back({"", false, type.ref});
+        auto rv = defaultValue(*type.ref, ctx, seen);
+        ctx.codingPath.pop_back();
+        return rv;
+    }
+    return err(ErrorKind::Invalid, "Unable to determine default value");
+}
+
+Result<json> defaultValue(const Node& type, Context& ctx) {
+    std::set<std::string> seen;
+    return defaultValue(type, ctx, seen);
+}
+
 // ---- decodeBinary ----------------------------------------------------------
 
 Result<json> decodeBinary(const Node& type, ABIDecoder& decoder, Context& ctx);
@@ -211,6 +266,9 @@ Result<json> decodeBinary(const Node& type, ABIDecoder& decoder, Context& ctx) {
         return err(ErrorKind::Invalid, "Maximum decoding depth exceeded");
     }
     if (type.isExtension && !decoder.canRead()) {
+        if (ctx.strictExtensions) {
+            return defaultValue(type, ctx);
+        }
         return json(nullptr);
     }
     if (type.isOptional) {
@@ -309,7 +367,13 @@ Result<json> decodeObjectInner(const json& value, const Node& type, Context& ctx
 
 Result<json> decodeObject(const json& value, const Node& type, Context& ctx) {
     if (value.is_null()) {
-        if (type.isOptional || type.isExtension) {
+        if (type.isOptional) {
+            return json(nullptr);
+        }
+        if (type.isExtension) {
+            if (ctx.strictExtensions) {
+                return defaultValue(type, ctx);
+            }
             return json(nullptr);
         }
         return err(ErrorKind::Invalid, "Unexpectedly encountered " + jsValue(value) +
@@ -353,10 +417,13 @@ Result<Bytes> encode(const json& object, std::string_view type, const ABI& abi) 
     return encoder.getBytes();
 }
 
-Result<json> decode(std::span<const uint8_t> data, std::string_view type, const ABI& abi) {
+Result<json> decode(std::span<const uint8_t> data, std::string_view type, const ABI& abi,
+                    const DecodeOptions& options) {
     const auto rootType = abi.resolveType(std::string(type));
     ABIDecoder decoder(data);
+    decoder.strictExtensions = options.strictExtensions;
     Context ctx;
+    ctx.strictExtensions = options.strictExtensions;
     ctx.codingPath.push_back({"root", false, rootType.get()});
     auto rv = decodeBinary(*rootType, decoder, ctx);
     if (!rv) {
@@ -365,19 +432,29 @@ Result<json> decode(std::span<const uint8_t> data, std::string_view type, const 
     return rv;
 }
 
-Result<json> decode(const Bytes& data, std::string_view type, const ABI& abi) {
-    return decode(std::span<const uint8_t>(data.array), type, abi);
+Result<json> decode(std::span<const uint8_t> data, std::string_view type, const ABI& abi) {
+    return decode(data, type, abi, DecodeOptions{});
 }
 
-Result<json> decodeObject(const json& object, std::string_view type, const ABI& abi) {
+Result<json> decode(const Bytes& data, std::string_view type, const ABI& abi) {
+    return decode(std::span<const uint8_t>(data.array), type, abi, DecodeOptions{});
+}
+
+Result<json> decodeObject(const json& object, std::string_view type, const ABI& abi,
+                          const DecodeOptions& options) {
     const auto rootType = abi.resolveType(std::string(type));
     Context ctx;
+    ctx.strictExtensions = options.strictExtensions;
     ctx.codingPath.push_back({"root", false, rootType.get()});
     auto rv = dwarfkit::decodeObject(object, *rootType, ctx);
     if (!rv) {
         return wrap("Decoding", ctx, std::move(rv.error()));
     }
     return rv;
+}
+
+Result<json> decodeObject(const json& object, std::string_view type, const ABI& abi) {
+    return decodeObject(object, type, abi, DecodeOptions{});
 }
 
 }  // namespace Serializer

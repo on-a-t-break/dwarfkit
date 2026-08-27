@@ -18,6 +18,10 @@ public:
 
     bool canRead(size_t bytes = 1) const { return pos_ + bytes <= array_.size(); }
 
+    // strictExtensions decode mode: absent binary-extension fields synthesize
+    // their type's default value instead of staying absent.
+    bool strictExtensions = false;
+
     Result<void> setPosition(size_t pos) {
         if (pos > array_.size()) {
             return err(ErrorKind::Invalid, "Invalid position");

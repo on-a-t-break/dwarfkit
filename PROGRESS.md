@@ -4,9 +4,9 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 
 ## Current state
 
-- Phase: 8 complete. All blueprint phases done: 422 test cases / 2779 assertions green, find_package install verified with an out-of-tree consumer. Remaining deferred items: antelope p2p module, strictExtensions decoding (tracked below).
+- Phase: 8 complete. All blueprint phases done. strictExtensions decoding landed post-blueprint; remaining deferred item: antelope p2p module.
 - In flight: nothing
-- Notes: CancelToken deferred to protocol-esr. strictExtensions decoding mode deferred until the session kit needs it (part of test/serializer.ts 'binary extensions' not ported). K1 byte-parity vectors verified against elliptic via node (scratchpad/elliptest). miniz was replaced with vendored zlib 1.3.1 for byte parity with pako (fixture hashes + ESR URIs); see DIVERGENCES.md.
+- Notes: CancelToken deferred to protocol-esr. strictExtensions decoding ported (DecodeOptions on both static and dynamic decode; default synthesis with circular detection). K1 byte-parity vectors verified against elliptic via node (scratchpad/elliptest). miniz was replaced with vendored zlib 1.3.1 for byte parity with pako (fixture hashes + ESR URIs); see DIVERGENCES.md.
 
 ## Phase 0: Bootstrap
 

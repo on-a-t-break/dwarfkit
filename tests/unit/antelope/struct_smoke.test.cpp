@@ -149,5 +149,13 @@ TEST_SUITE("struct-smoke") {
         const auto decodedFull =
             Serializer::decode<ExtStruct>(Bytes::from("010700").value()).value();
         CHECK(*decodedFull.b == 7);
+        // strictExtensions synthesizes the default into the typed field
+        const auto decodedStrict =
+            Serializer::decode<ExtStruct>(std::span<const uint8_t>(
+                                              Bytes::from("01").value().array),
+                                          {.strictExtensions = true})
+                .value();
+        REQUIRE(decodedStrict.b.hasValue());
+        CHECK(*decodedStrict.b == 0);
     }
 }

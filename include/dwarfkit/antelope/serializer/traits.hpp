@@ -685,7 +685,12 @@ struct abi_traits<BinaryExtension<T>> {
         return {};
     }
     static Result<BinaryExtension<T>> fromABI(ABIDecoder& d) {
-        if (!d.canRead()) return BinaryExtension<T>{};
+        if (!d.canRead()) {
+            if (d.strictExtensions) {
+                return BinaryExtension<T>(abi_traits<T>::abiDefault());
+            }
+            return BinaryExtension<T>{};
+        }
         DK_TRY(value, abi_traits<T>::fromABI(d));
         return BinaryExtension<T>(std::move(value));
     }

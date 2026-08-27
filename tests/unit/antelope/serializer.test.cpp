@@ -2,8 +2,8 @@
 //
 // Not ported (see DIVERGENCES.md): 'struct object'/'untyped struct'/'custom
 // alias'/'coder metadata' (TS runtime class machinery), 'argument mutation'
-// (json is passed by value), and 'binary extensions' strictExtensions cases
-// (strictExtensions is deferred until the session kit needs it).
+// (json is passed by value). The 'binary extensions' strictExtensions cases
+// port through the dynamic path (custom-class coupling cases are TS-runtime).
 #include <doctest/doctest.h>
 
 #include <fstream>
@@ -604,6 +604,113 @@ TEST_SUITE("serializer") {
               "3401016b010369363401610103666f6f036261720000010176020161016200");
         const auto decoded = Serializer::decode<ABI>(data).value();
         CHECK(decoded.equals(abi));
+    }
+
+    TEST_CASE("binary extensions strict") {
+        // the ManyExtensions layout from serializer.ts as a plain ABI (the
+        // synthesized/loose-coupling form: super_int resolves to uint8)
+        const ABI abi = ABI::from(json{
+            {"version", "eosio::abi/1.2"},
+            {"types", json::array({{{"new_type_name", "super_int"}, {"type", "uint8"}}})},
+            {"variants",
+             json::array({{{"name", "jazz_variant"},
+                           {"types", json::array({"super_int", "string"})}}})},
+            {"structs",
+             json::array(
+                 {{{"name", "info_pair"},
+                   {"base", ""},
+                   {"fields", json::array({{{"name", "key"}, {"type", "string"}},
+                                           {{"name", "value"}, {"type", "bytes"}}})}},
+                  {{"name", "many_extensions"},
+                   {"base", ""},
+                   {"fields",
+                    json::array({{{"name", "name"}, {"type", "string"}},
+                                 {{"name", "info"}, {"type", "info_pair[]$"}},
+                                 {{"name", "singleInfo"}, {"type", "info_pair$"}},
+                                 {{"name", "uint32"}, {"type", "uint32$"}},
+                                 {{"name", "asset"}, {"type", "asset$"}},
+                                 {{"name", "checksum256"}, {"type", "checksum256$"}},
+                                 {{"name", "superInt"}, {"type", "super_int$"}},
+                                 {{"name", "jazz"}, {"type", "jazz_variant$"}},
+                                 {{"name", "maybeJazz"}, {"type", "jazz_variant?$"}},
+                                 {{"name", "dumbBool"}, {"type", "bool?$"}},
+                                 {{"name", "bool"}, {"type", "bool$"}}})}}})}})
+                            .value();
+        const auto data = Bytes::from("03666f6f").value();
+        SUBCASE("binary decode synthesizes defaults") {
+            const auto res =
+                Serializer::decode(data.array, "many_extensions", abi,
+                                   {.strictExtensions = true})
+                    .value();
+            CHECK(res["name"] == "foo");
+            CHECK(res["info"] == json::array());
+            CHECK(res["singleInfo"]["key"] == "");
+            CHECK(res["uint32"] == 0);
+            CHECK(res["asset"] == "0.0000 SYS");
+            CHECK(res["checksum256"] ==
+                  "0000000000000000000000000000000000000000000000000000000000000000");
+            CHECK(res["superInt"] == 0);
+            CHECK(res["jazz"] == json::array({"super_int", 0}));
+            CHECK(res["maybeJazz"].is_null());
+            CHECK(res["dumbBool"].is_null());
+            CHECK(res["bool"] == false);
+        }
+        SUBCASE("without strict the extensions stay absent") {
+            const auto res = Serializer::decode(data, "many_extensions", abi).value();
+            CHECK(res["uint32"].is_null());
+            CHECK(res["bool"].is_null());
+        }
+        SUBCASE("object decode synthesizes defaults") {
+            const auto res = Serializer::decodeObject(json{{"name", "foo"},
+                                                           {"dumbBool", false}},
+                                                      "many_extensions", abi,
+                                                      {.strictExtensions = true})
+                                 .value();
+            CHECK(res["uint32"] == 0);
+            CHECK(res["jazz"] == json::array({"super_int", 0}));
+            CHECK(res["dumbBool"] == false);
+            CHECK(res["bool"] == false);
+        }
+        SUBCASE("circular type reference errors") {
+            json circular = abi.toJSON();
+            circular["structs"][1]["fields"][1]["type"] = "many_extensions$";
+            const ABI patched = ABI::from(circular).value();
+            const auto res = Serializer::decode(data.array, "many_extensions", patched,
+                                                {.strictExtensions = true});
+            REQUIRE_FALSE(res.has_value());
+            CHECK(res.error().message.find("Circular type reference") != std::string::npos);
+        }
+        SUBCASE("optional shouldnt return null") {
+            // strict mode never synthesizes plain optionals
+            const ABI approveAbi =
+                ABI::from(json{
+                    {"version", "eosio::abi/1.2"},
+                    {"structs",
+                     json::array(
+                         {{{"name", "permission_level"},
+                           {"base", ""},
+                           {"fields",
+                            json::array({{{"name", "actor"}, {"type", "name"}},
+                                         {{"name", "permission"}, {"type", "name"}}})}},
+                          {{"name", "approve"},
+                           {"base", ""},
+                           {"fields",
+                            json::array(
+                                {{{"name", "proposer"}, {"type", "name"}},
+                                 {{"name", "proposal_name"}, {"type", "name"}},
+                                 {{"name", "level"}, {"type", "permission_level"}},
+                                 {{"name", "proposal_hash"},
+                                  {"type", "checksum256?"}}})}}})}})
+                    .value();
+            const auto res =
+                Serializer::decodeObject(json{{"proposer", "foo"},
+                                              {"proposal_name", "bar"},
+                                              {"level",
+                                               {{"actor", "foo"}, {"permission", "bar"}}}},
+                                         "approve", approveAbi, {.strictExtensions = true})
+                    .value();
+            CHECK(res["proposal_hash"].is_null());
+        }
     }
 
     TEST_CASE("action_results") {

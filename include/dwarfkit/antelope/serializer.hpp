@@ -109,10 +109,26 @@ Result<Bytes> encode(const T& object) {
     return encoder.getBytes();
 }
 
+// Decode behavior flags (upstream args.strictExtensions).
+struct DecodeOptions {
+    // Absent binary-extension fields synthesize their type's default value
+    // instead of decoding as null/absent.
+    bool strictExtensions = false;
+};
+
 // Static decode: type known at compile time.
+// The options overload enables strictExtensions for typed BinaryExtension
+// fields.
 template <class T>
 Result<T> decode(std::span<const uint8_t> data) {
     ABIDecoder decoder(data);
+    return abi_traits<T>::fromABI(decoder);
+}
+
+template <class T>
+Result<T> decode(std::span<const uint8_t> data, const DecodeOptions& options) {
+    ABIDecoder decoder(data);
+    decoder.strictExtensions = options.strictExtensions;
     return abi_traits<T>::fromABI(decoder);
 }
 
@@ -124,9 +140,13 @@ Result<T> decode(const Bytes& data) {
 // Dynamic encode/decode against an ABI (defined in serializer.cpp).
 Result<Bytes> encode(const json& object, std::string_view type, const ABI& abi);
 Result<json> decode(std::span<const uint8_t> data, std::string_view type, const ABI& abi);
+Result<json> decode(std::span<const uint8_t> data, std::string_view type, const ABI& abi,
+                    const DecodeOptions& options);
 Result<json> decode(const Bytes& data, std::string_view type, const ABI& abi);
 // Decode (validate and normalize) an untyped json object against an ABI.
 Result<json> decodeObject(const json& object, std::string_view type, const ABI& abi);
+Result<json> decodeObject(const json& object, std::string_view type, const ABI& abi,
+                          const DecodeOptions& options);
 
 // Create an Antelope/EOSIO ABI definition for given core type.
 template <class T>
