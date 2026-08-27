@@ -4,7 +4,7 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 
 ## Current state
 
-- Phase: 3 complete. Next: Phase 4 contract kit (resources already done), then token and account.
+- Phase: 4 in progress. contract and resources done. Next: token kit, then account kit.
 - In flight: nothing
 - Notes: CancelToken deferred to protocol-esr. strictExtensions decoding mode deferred until the session kit needs it (part of test/serializer.ts 'binary extensions' not ported). K1 byte-parity vectors verified against elliptic via node (scratchpad/elliptest). miniz was replaced with vendored zlib 1.3.1 for byte parity with pako (fixture hashes + ESR URIs); see DIVERGENCES.md.
 
@@ -40,7 +40,7 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 
 ## Phase 4: contract, account, resources, token
 
-- [ ] `contract` + tests.
+- [x] `contract` + tests. (kit.ts/contract.ts/table.ts/types.ts/utils.ts; rows are json, request bodies key-order-matched to the recorded fixtures; the two deferred session transact cases now ported)
 - [x] `resources` + tests (numeric parity). (pulled forward for the resource provider plugin; RAM/REX/PowerUp exact values on eos/jungle/wax fixtures; UInt128/Int128 gained multiply/divide with the upstream rounding modes)
 - [ ] `token` + tests.
 - [ ] `account` + tests.

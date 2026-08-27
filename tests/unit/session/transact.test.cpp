@@ -1,6 +1,9 @@
-// Port of session test/tests/transact.ts (the ContractKit cases move to the
-// contract kit tests; TransactPluginResourceProvider cases to its plugin item)
+// Port of session test/tests/transact.ts (TransactPluginResourceProvider cases
+// move to that plugin item)
 #include <doctest/doctest.h>
+
+#include <dwarfkit/contract.hpp>
+#include <dwarfkit/plugins/transact/resource_provider.hpp>
 
 #include "../../util/mock_session.hpp"
 
@@ -53,6 +56,44 @@ TEST_SUITE("transact") {
             const auto result =
                 data.session.transact({.action = makeMockActionJson()}).value();
             assertValidTransactResponse(result);
+        }
+    }
+
+    TEST_CASE("args: action from contract kit") {
+        const auto client = makeClient(DK_FIXTURE_DIR "/session/data");
+        SessionArgs args = mockSessionArgs();
+        args.permissionLevel = PermissionLevel{"wharfkit1125"_n, "test"_n};
+        Session session(args, mockSessionOptions());
+        ContractKit kit({.client = client}, {.abiCache = session.abiCache});
+        const auto contract = kit.load(Name::from("eosio")).value();
+        const auto action =
+            contract.action(Name::from("claimrewards"), json{{"owner", "teamgreymass"}}).value();
+        TransactOptions options;
+        options.transactPlugins =
+            plugins({std::make_shared<TransactPluginResourceProvider>()});
+        SUBCASE("action") {
+            const auto result =
+                session.transact({.action = Serializer::objectify(action)}, options).value();
+            REQUIRE(result.transaction.has_value());
+            CHECK(result.transaction->actions[0].authorization[0].actor ==
+                  Name::from("wharfkit1125"));
+            CHECK(result.transaction->actions[0].authorization[0].permission ==
+                  Name::from("test"));
+        }
+        SUBCASE("to append to transaction") {
+            const auto info = client->v1.chain.get_info().value();
+            const auto header = info.getTransactionHeader();
+            Transaction transaction;
+            static_cast<TransactionHeader&>(transaction) = header;
+            transaction.actions = {action};
+            const auto result =
+                session.transact({.transaction = Serializer::objectify(transaction)}, options)
+                    .value();
+            REQUIRE(result.transaction.has_value());
+            CHECK(result.transaction->actions[0].authorization[0].actor ==
+                  Name::from("wharfkit1125"));
+            CHECK(result.transaction->actions[0].authorization[0].permission ==
+                  Name::from("test"));
         }
     }
 

@@ -65,6 +65,10 @@ add_library(dwarfkit STATIC
   resources/resources.cpp
   resources/rex.cpp
   msigs/msigs.cpp
+  contract/contract.cpp
+  contract/kit.cpp
+  contract/table.cpp
+  contract/utils.cpp
 )
 
 target_include_directories(dwarfkit PUBLIC

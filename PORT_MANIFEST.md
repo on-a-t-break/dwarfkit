@@ -26,7 +26,7 @@ One row per upstream repo (all of github.com/wharfkit at 2026-08-26, plus greyma
 | common | 1.5.0 | 31f7106 | port | done 1.5.0 | Chains/ChainDefinition/explorer/logo/token; Canceled maps to ErrorKind::Canceled |
 | conformance | 0.1.0 | 39834b9 | reference | - | float-op oracle contract on Jungle 4 (conform.gm); optional DK_LIVE_TESTS consumer for float parity |
 | console-renderer | 0.1.1 | b7146d3 | reference | - | informs ConsoleUserInterface |
-| contract | 1.3.0 | 2c98897 | port | - | Phase 4 |
+| contract | 1.3.0 | 2c98897 | port | done 1.3.0 | kit/contract/table/utils; rows as json; request bodies key-order-matched to recordings |
 | data-type-template | 0.0.0 | e9c5f35 | reference | - | template |
 | discussions | - | d84533e | skip | - | GitHub discussions repo, no code |
 | docs | - | 8d9c893 | reference | - | documentation site |

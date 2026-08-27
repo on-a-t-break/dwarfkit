@@ -91,3 +91,10 @@ Every intentional deviation from Wharfkit, one line of reason each. Anything not
 | `@wharfkit/msigs` loose response interfaces | json responses | Upstream never runs them through the serializer |
 | Anchor account creation popup (window.open + postMessage + 500ms close poll) | `openDialog` handler: the embedder opens the url and returns the service payload | No browser window on native; same protocol |
 | jungle4 plugin copy-to-clipboard button carries an onClick closure | The prompt button element carries the key as data for the UI to copy | Prompt elements are data, not code |
+
+## contract
+
+- Table rows are `dk::json` values rather than typed row structs. The TS kit decodes rows into `rowType` classes generated per table; dwarfkit decodes with `Serializer::decode(data, type, abi)` into json and leaves typed rows to dkgen output. Typed-row test assertions become field checks.
+- `Table::buildParams` emulates the exact JSON key insertion order the TS code produces (spread construction in table.ts plus the client writing `json`/`lower_bound`/`upper_bound` in place) so request bodies hash to the recorded fixture names. Two orders exist: the cursor path `{json, limit, table, code, scope, [index_position], key_type, [lower_bound], [upper_bound], [limit], [reverse]}` and the get path `{table, code, scope, limit, [lower_bound], [upper_bound], [index_position], key_type, json}`.
+- `key_type` is always sent, inferred as `i64` for numeric bounds and `name` otherwise, matching what the recorded requests carry even though the TS type allows omitting it.
+- `Contract.action` data is encoded at construction (`Action.data` bytes); the TS kit defers with an ABI-carrying Action subclass. Behavior is identical for serialization and transact flows.
