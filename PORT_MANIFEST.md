@@ -12,7 +12,7 @@ One row per upstream repo (all of github.com/wharfkit at 2026-08-26, plus greyma
 | account-creation-plugin-jungle4 | 1.2.0 | b9f2fab | port | done 1.2.0 | upstream ships only a commented template test; faucet flow covered |
 | account-creation-plugin-metamask | 1.3.0 | 3b00177 | skip | - | needs the MetaMask browser extension |
 | account-creation-plugin-template | 1.0.0 | 653b653 | reference | - | template; informs examples/ |
-| actionstream | 0.4.0 | a7c8608 | port | - | Phase 4 extras; Roborovski action stream client over WebSocketProvider |
+| actionstream | 0.4.0 | a7c8608 | port | done 0.4.0 | blocking pull client over WebSocketProvider; queue/overflow path not applicable (DIVERGENCES) |
 | antelope | 1.2.0 | bb3c9fb | port | wip (all but p2p/) | Phase 1 core done: chain, serializer, crypto, api all ported with tests green. p2p/ deferred (needs a socket interface decision) |
 | antelope-rs | - | 8ff21c7 | reference | - | Rust port; cross-check when the TS is ambiguous |
 | api-client-template | 0.0.0 | 367bbc9 | reference | - | template |

@@ -145,3 +145,9 @@ Every intentional deviation from Wharfkit, one line of reason each. Anything not
 - ABI field names that are C++ keywords are a hard error: DK_FIELDS derives the wire name from the member identifier. Method names for actions/tables are sanitized (dots removed, keyword suffix underscore, leading digit prefixed).
 - The cli's prettier/eslint pass has no equivalent; output formatting is fixed. action_results interfaces are not emitted (readonly returns json).
 - DK_NO_FIELDS was added to the serializer macros for ABIs that declare empty action argument structs (e.g. atomicassets init).
+
+## actionstream
+
+- The event-driven WebSocket client becomes a blocking pull client: heartbeats, catchup, errors and reconnects are processed while next()/nextWithTimeout() pumps the socket, firing the same callbacks. The in-memory action queue, its overflow path (onOverflow/queueSize/overflowCount) and the async iterator do not exist; unread frames stay in the transport and next() is the iterator.
+- startSeq: 'head' becomes the startAtHead option (same 2^64-1 sentinel on the wire). Reconnect backoff doubles to reconnectMaxDelay and resets after a connection outlives healthyThreshold, as upstream; the backoff wait happens inside the pump and honors the CancelToken.
+- Protocol behavior is 1:1: subscribe/ack message shapes, resume from the last accepted global_seq, the ack watermark (interval, watermark never rewinds), sub_seq gap detection including the omitted-field disable and the restart-at-1-after-reconnect rule, and DataInconsistent for actions without a trx_id.
