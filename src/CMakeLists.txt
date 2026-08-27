@@ -44,6 +44,15 @@ add_library(dwarfkit STATIC
   protocol_esr/esr.cpp
   protocol_esr/sealed_messages.cpp
   protocol_esr/utils.cpp
+  session/account_creation.cpp
+  session/interfaces.cpp
+  session/kit.cpp
+  session/session.cpp
+  session/storage.cpp
+  session/transact.cpp
+  session/utils.cpp
+  session/wallet.cpp
+  plugins/wallet/privatekey.cpp
 )
 
 target_include_directories(dwarfkit PUBLIC

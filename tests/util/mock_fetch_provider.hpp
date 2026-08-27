@@ -23,8 +23,10 @@ public:
     explicit MockFetchProvider(std::string dataDir) : dataDir_(std::move(dataDir)) {}
 
     Result<FetchResponse> fetch(const FetchRequest& request) override {
-        // the fetch init object as recorded by mock-data (headers omitted when
-        // empty, matching the recordings)
+        // the fetch init object as recorded by mock-data. Recordings differ by
+        // the antelope version used: older ones omit the headers key when no
+        // headers were set, newer ones always record "headers": {}. Try the
+        // bare form first, then the empty-headers form.
         json init = {{"method", request.method}};
         if (!request.body.empty()) {
             init["body"] = request.body;
@@ -36,12 +38,19 @@ public:
             }
             init["headers"] = std::move(headers);
         }
-        const std::string key = request.url + init.dump();
-        const std::vector<uint8_t> keyBytes(key.begin(), key.end());
-        const std::string filename =
-            dataDir_ + "/" + Checksum160::hash(keyBytes).hexString() + ".json";
-
+        const auto filenameFor = [&](const json& params) {
+            const std::string key = request.url + params.dump();
+            const std::vector<uint8_t> keyBytes(key.begin(), key.end());
+            return dataDir_ + "/" + Checksum160::hash(keyBytes).hexString() + ".json";
+        };
+        std::string filename = filenameFor(init);
         std::ifstream file(filename);
+        if (!file.good() && request.headers.empty()) {
+            json withEmptyHeaders = init;
+            withEmptyHeaders["headers"] = json::object();
+            filename = filenameFor(withEmptyHeaders);
+            file = std::ifstream(filename);
+        }
         if (!file.good()) {
             return err(ErrorKind::NotFound, "No data for " + request.url);
         }

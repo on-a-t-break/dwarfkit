@@ -66,3 +66,15 @@ Every intentional deviation from Wharfkit, one line of reason each. Anything not
 | `generateReturnUrl` browser sniffing (iOS/Android/browser deep links) | Returns nullopt; createIdentityRequest never sets same_device/return_path | No window/navigator on native; engine adapters own deep links |
 | `getUserAgent()` appends navigator.userAgent | "@wharfkit/protocol-esr 1.6.1 dwarfkit/<version>" | No navigator; keeps the upstream prefix wallets may match on |
 | `waitForCallback(callbackArgs, buoyWs, t)` translation callback | Fixed upstream default message "The request was cancelled from Anchor." | Session kit translations arrive in Phase 3 |
+| `register(context)` plugin method | `register_(context)` | `register` is reserved in C++ |
+| Session/SessionKit constructors throw (missing permission, missing fetch) | Type-level requirements: SessionArgs carries a typed PermissionLevel; a missing FetchProvider surfaces as a transport error at call time | No exceptions in the public API |
+| `appName` in SessionOptions | In SessionArgs (BLUEPRINT.md 6.6) | Blueprint signature |
+| `BrowserLocalStorage` default kit storage | `MemorySessionStorage` default; `FileSessionStorage` for persistence | No browser (BLUEPRINT.md 2) |
+| `AbstractUserInterface.translate`/`addTranslations` throw "must be implemented" | translate returns the default value or the key; addTranslations is a no-op | No exceptions; the fallback is useful for UIs without localization |
+| `TransactRevision.code` is `String(hook)` (function source) | Hook labels ("original", "beforeSign#N") | C++ closures cannot be stringified; nothing asserts the strings |
+| eosjs transact compat (loose header fields upgrade `{actions}` to a transaction) | Dropped; TransactArgs is typed so stray headers cannot ride along | Impossible by construction; pass `.transaction` instead |
+| `TransactArgs.request: SigningRequest \| string` | `std::optional<std::variant<SigningRequest, std::string>>` | Union type |
+| WalletPlugin get/set accessors and optional methods (`logout?`, `retrievePublicKey?`) | Virtual methods plus `hasLogout()`/`hasRetrievePublicKey()` flags | C++ cannot detect optional overrides |
+| `@wharfkit/mock-data` npm package | tests/util mock headers, not shipped | Test-only surface |
+| Upstream WalletPluginPrivateKey description templates "undefined" (reads the never-set data.publicKey) | Uses the actual public key string | Faithful reproduction would embed the word "undefined" |
+| `processReturnValues` truthiness check on return_value_hex_data | Explicit absent-or-empty-string check | JS falsy semantics |

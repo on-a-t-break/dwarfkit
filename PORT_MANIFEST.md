@@ -40,14 +40,14 @@ One row per upstream repo (all of github.com/wharfkit at 2026-08-26, plus greyma
 | issues | - | 4823d3e | skip | - | meta repo, no code |
 | js | 4.0.0-rc2 | 639cf3a | reference | - | upcoming all-in-one v4 bundle; watch for API changes |
 | login-plugin-template | 1.0.0 | 0610c4b | reference | - | template; informs examples/ |
-| mock-data | 1.3.1 | 9cf701d | port | wip | MockFetchProvider + makeClient ported (tests/util); session mocks land with the session kit |
+| mock-data | 1.3.1 | 9cf701d | port | done 1.3.1 | tests/util/mock_fetch_provider.hpp + mock_session.{hpp,cpp}; not shipped in the library |
 | msigs | 0.3.1 | c8ccca7 | port | - | Phase 4 extras; Roborovski msigs API client. NOTE: the blueprint's "msig proposal transact plugin" does not exist as an org repo |
 | protocol-esr | 1.6.1 | 1b61ed2 | port | done 1.6.1 | createIdentityRequest takes EsrLoginContext until the session kit lands |
 | protocol-scatter | 1.4.0 | 846bd39 | skip | - | browser window injection |
 | resources | 1.6.0 | 0af2e3c | port | - | Phase 4 |
 | roborovski | 1.1.0 | 2025112 | port | - | Phase 4 extras; Roborovski API client |
 | sealed-messages | 1.2.0 | 8fc32b0 | port | done 1.2.0 | folded into protocol_esr; AES byte parity proven against the npm package (README mentions Shamir but src only seals/unseals) |
-| session | 1.6.1 | 467f049 | port | - | Phase 3 |
+| session | 1.6.1 | 467f049 | port | done 1.6.1 | kit/session/login/transact/storage/ui/wallet/account-creation; tests green on recorded fixtures (ContractKit cases deferred to the contract kit) |
 | signing-request | 3.4.0 | 18a13f7 | port | done 3.4.0 | request.ts and misc.ts green with exact URI/digest/proof vectors |
 | skill | - | f87fb83 | skip | - | Claude Code skill for wharfkit development, no library code |
 | starter | - | 253797a | reference | - | starter kit |
@@ -74,7 +74,7 @@ One row per upstream repo (all of github.com/wharfkit at 2026-08-26, plus greyma
 | wallet-plugin-mimic | 1.1.0 | 81ac40d | skip | - | unmodified template fork (class still WalletPluginTEMPLATE) |
 | wallet-plugin-mock | 1.1.0 | ac5fb00 | port | - | Phase 3 |
 | wallet-plugin-paycash | 1.1.0 | e6c2ada | port | - | Phase 5; ESR-based like Anchor |
-| wallet-plugin-privatekey | 1.1.0 | f611111 | port | - | Phase 3, first wallet |
+| wallet-plugin-privatekey | 1.1.0 | f611111 | port | done 1.1.0 | plugins/wallet/privatekey |
 | wallet-plugin-scatter | 1.5.1 | 2d7848d | skip | - | browser |
 | wallet-plugin-template | 1.1.0 | 7dac61f | reference | - | template; informs examples/ |
 | wallet-plugin-tokenpocket | 1.6.3 | 500ddb9 | skip | - | browser |

@@ -1,6 +1,6 @@
 file(GLOB_RECURSE DK_TEST_SOURCES CONFIGURE_DEPENDS unit/*.test.cpp)
 
-add_executable(dwarfkit_tests main.cpp ${DK_TEST_SOURCES})
+add_executable(dwarfkit_tests main.cpp util/mock_session.cpp ${DK_TEST_SOURCES})
 target_link_libraries(dwarfkit_tests PRIVATE dwarfkit dk_doctest)
 # DOCTEST_CONFIG_USE_STD_HEADERS: doctest's forward declarations of std types
 # conflict with the VS2022 17.14 STL

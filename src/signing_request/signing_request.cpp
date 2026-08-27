@@ -518,6 +518,15 @@ Result<ResolvedTransaction> SigningRequest::resolveTransaction(const AbiMap& abi
     rv.max_cpu_usage_ms = tx.max_cpu_usage_ms;
     rv.delay_sec = tx.delay_sec;
     rv.actions = std::move(actions);
+    // context free actions and extensions carry over raw (the upstream spread
+    // {...tx, actions} keeps them as-is; data stays hex)
+    for (const auto& cfa : tx.context_free_actions) {
+        rv.context_free_actions.push_back(ResolvedAction{.account = cfa.account,
+                                                         .name = cfa.name,
+                                                         .authorization = cfa.authorization,
+                                                         .data = json(cfa.data.hexString())});
+    }
+    rv.transaction_extensions = tx.transaction_extensions;
     return rv;
 }
 
@@ -558,6 +567,18 @@ Result<ResolvedSigningRequest> SigningRequest::resolve(const AbiMap& abis,
     transaction.max_cpu_usage_ms = tx.max_cpu_usage_ms;
     transaction.delay_sec = tx.delay_sec;
     transaction.actions = std::move(actions);
+    for (const auto& cfa : tx.context_free_actions) {
+        Action typed;
+        typed.account = cfa.account;
+        typed.name = cfa.name;
+        typed.authorization = cfa.authorization;
+        if (cfa.data.is_string()) {
+            DK_TRY(bytes, Bytes::from(cfa.data.get<std::string>()));
+            typed.data = bytes;
+        }
+        transaction.context_free_actions.push_back(std::move(typed));
+    }
+    transaction.transaction_extensions = tx.transaction_extensions;
 
     ChainId chainId;
     if (isMultiChain()) {

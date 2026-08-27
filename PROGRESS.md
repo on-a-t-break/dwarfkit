@@ -4,7 +4,7 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 
 ## Current state
 
-- Phase: 2 complete (common, abicache, signing-request, protocol-esr). Next: Phase 3 session kit.
+- Phase: 3. Session kit, mocks and WalletPluginPrivateKey done; next transact plugins (resource provider et al).
 - In flight: nothing
 - Notes: CancelToken deferred to protocol-esr. strictExtensions decoding mode deferred until the session kit needs it (part of test/serializer.ts 'binary extensions' not ported). K1 byte-parity vectors verified against elliptic via node (scratchpad/elliptest). miniz was replaced with vendored zlib 1.3.1 for byte parity with pako (fixture hashes + ESR URIs); see DIVERGENCES.md.
 
@@ -32,8 +32,8 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 
 ## Phase 3: session and plugins
 
-- [ ] `session`: kit, session, login, transact pipeline, plugin base classes, `UserInterface`, storage, translations, `ConsoleUserInterface`, `NullUserInterface`, `FileSessionStorage`, `MemorySessionStorage`.
-- [ ] `WalletPluginPrivateKey`, `WalletPluginMock`, `TransactPluginMock`; session test suite green.
+- [x] `session`: kit, session, login, transact pipeline, plugin base classes, `UserInterface`, storage, translations, `ConsoleUserInterface`, `NullUserInterface`, `FileSessionStorage`, `MemorySessionStorage`. (session.ts/kit.ts/transact.ts/context.ts/utils.ts/wallet.ts/ui.ts/abi.ts/beforeSign.ts ported against the recorded jungle4 fixtures, send_transaction bodies byte-exact; ContractKit-dependent cases deferred to the contract kit; translations are type-level, the repo ships none)
+- [x] `WalletPluginPrivateKey`, `WalletPluginMock`, `TransactPluginMock`; session test suite green. (mocks live in tests/util like upstream @wharfkit/mock-data)
 - [ ] `TransactPluginResourceProvider`, `Cosigner`, `ExplorerLink`, `FinalityChecker`, `FinalityCallback`, `Autocorrect`, msig plugin; their tests.
 - [ ] Login and account-creation plugin bases; Greymass and Jungle account-creation plugins.
 - [ ] `examples/transfer_privatekey` runs against Jungle 4.

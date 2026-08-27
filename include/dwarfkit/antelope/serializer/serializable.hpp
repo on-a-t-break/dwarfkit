@@ -165,6 +165,11 @@ public:
         return std::get_if<T>(&value);
     }
 
+    template <class T>
+    T* get_if() {
+        return std::get_if<T>(&value);
+    }
+
     bool equals(const Variant& other) const { return value == other.value; }
     bool operator==(const Variant&) const = default;
 

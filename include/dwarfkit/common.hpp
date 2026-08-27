@@ -5,5 +5,6 @@
 
 #include <dwarfkit/common/chains.hpp>
 #include <dwarfkit/common/explorer.hpp>
+#include <dwarfkit/common/locale.hpp>
 #include <dwarfkit/common/logo.hpp>
 #include <dwarfkit/common/token.hpp>
