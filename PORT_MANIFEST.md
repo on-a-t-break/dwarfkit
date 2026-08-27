@@ -7,7 +7,7 @@ One row per upstream repo (all of github.com/wharfkit at 2026-08-26, plus greyma
 | Repo | Version | Commit | Classification | Status | Notes |
 |---|---|---|---|---|---|
 | abicache | 1.2.4 | b8fd381 | port | done 1.2.4 | tests green against copied fixtures |
-| account | 1.4.1 | fd370fe | port | - | Phase 4 |
+| account | 1.4.1 | fd370fe | port | done 1.4.1 | AccountKit/Account templated on account data type; Permission/Resource; system_contract embedded ABI |
 | account-creation-plugin-anchor | 1.4.0 | d5138c2 | port | done 1.4.0 | popup + postMessage becomes an openDialog embedder hook |
 | account-creation-plugin-jungle4 | 1.2.0 | b9f2fab | port | done 1.2.0 | upstream ships only a commented template test; faucet flow covered |
 | account-creation-plugin-metamask | 1.3.0 | 3b00177 | skip | - | needs the MetaMask browser extension |

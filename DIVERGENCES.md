@@ -105,3 +105,11 @@ Every intentional deviation from Wharfkit, one line of reason each. Anything not
 - The recorded balance fixtures for symbol-code queries carry empty `lower_bound`/`upper_bound` with `key_type:"name"`, an artifact of the older antelope client they were recorded with. Current upstream sources (contract `wrapIndexValue` passing the UInt64 through, the client inferring `key_type:"i64"` and stringifying the bound) produce the bodies dwarfkit produces, so those fixtures are re-keyed under the current-behavior hashes with the recorded responses kept verbatim. The `NOT` symbol fixture is the recorded empty-rows response re-keyed under the bounded query body (a correct bound on an unheld symbol matches no row).
 - Upstream's "symbol does not exist" test asserts nothing (a string second argument to `assert.rejects` is an assertion message, not a matcher) and its symbol-mismatch branch is only reachable through the empty-bound quirk. The branch is ported 1:1; the test asserts the missing-row error path that correct bounds produce.
 - `balance()` error wrapping drops the JS `Error: ` stringification prefix: `Failed to fetch balance for X: <message>`.
+
+## account
+
+- `AccountKit<DataType>`/`Account<DataType>` mirror the upstream generic as class templates defaulting to `api::v1::AccountObject`. Upstream reads the data type from `chain.accountDataType` at runtime; dwarfkit's ChainDefinition carries no type reference, so the type is chosen at the call site (`AccountKit<WAXAccountObject>`), consistent with the earlier ChainDefinition divergence.
+- `ResourceType` is an enum instead of a string union (the unknown-type constructor throw becomes unrepresentable), and `Resource` does not retain the source AccountObject; `toJSON` emits the same fields.
+- `Permission` mutators return `Result<void>` in place of throws. The unused exported TS type aliases (PermissionData, ActionData, AddKeyActionParam) are dropped; `LinkedAction` is `api::v1::AccountLinkedAction`.
+- The generated `contracts/eosio.ts` module becomes `system_contract::{abiBlob, abi(), contract()}` like the token package's system_token.
+- The one recorded balance query with the old-era empty bounds is re-keyed under the current-behavior body (same rationale as the token package).

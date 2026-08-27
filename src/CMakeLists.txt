@@ -71,6 +71,9 @@ add_library(dwarfkit STATIC
   contract/utils.cpp
   token/system_token.cpp
   token/token.cpp
+  account/system_contract.cpp
+  account/permission.cpp
+  account/resource.cpp
 )
 
 target_include_directories(dwarfkit PUBLIC
