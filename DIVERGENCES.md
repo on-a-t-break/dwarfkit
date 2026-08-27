@@ -89,3 +89,5 @@ Every intentional deviation from Wharfkit, one line of reason each. Anything not
 | autocorrect `register` throws without a UI | Installs a hook that reports the error at transact time | No exceptions in the public API |
 | Old-antelope test recordings (POST get_info, uncompressed send_transaction, mismatched status text) | Fixtures re-keyed/aligned to the current wire format where signatures proved identical | mock-data lookups are keyed by the exact request bytes; the crypto parity is unchanged |
 | `@wharfkit/msigs` loose response interfaces | json responses | Upstream never runs them through the serializer |
+| Anchor account creation popup (window.open + postMessage + 500ms close poll) | `openDialog` handler: the embedder opens the url and returns the service payload | No browser window on native; same protocol |
+| jungle4 plugin copy-to-clipboard button carries an onClick closure | The prompt button element carries the key as data for the UI to copy | Prompt elements are data, not code |

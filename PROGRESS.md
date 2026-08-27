@@ -4,7 +4,7 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 
 ## Current state
 
-- Phase: 3. Transact plugins done (resources kit pulled forward from Phase 4); next login/account-creation plugins and the transfer example.
+- Phase: 3 complete. Next: Phase 4 contract kit (resources already done), then token and account.
 - In flight: nothing
 - Notes: CancelToken deferred to protocol-esr. strictExtensions decoding mode deferred until the session kit needs it (part of test/serializer.ts 'binary extensions' not ported). K1 byte-parity vectors verified against elliptic via node (scratchpad/elliptest). miniz was replaced with vendored zlib 1.3.1 for byte parity with pako (fixture hashes + ESR URIs); see DIVERGENCES.md.
 
@@ -35,8 +35,8 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 - [x] `session`: kit, session, login, transact pipeline, plugin base classes, `UserInterface`, storage, translations, `ConsoleUserInterface`, `NullUserInterface`, `FileSessionStorage`, `MemorySessionStorage`. (session.ts/kit.ts/transact.ts/context.ts/utils.ts/wallet.ts/ui.ts/abi.ts/beforeSign.ts ported against the recorded jungle4 fixtures, send_transaction bodies byte-exact; ContractKit-dependent cases deferred to the contract kit; translations are type-level, the repo ships none)
 - [x] `WalletPluginPrivateKey`, `WalletPluginMock`, `TransactPluginMock`; session test suite green. (mocks live in tests/util like upstream @wharfkit/mock-data)
 - [x] `TransactPluginResourceProvider`, `Cosigner`, `ExplorerLink`, `FinalityChecker`, `FinalityCallback`, `Autocorrect`, msig plugin; their tests. (msig = @wharfkit/msigs MsigsClient; some fixtures re-keyed for the current wire format where the recordings predate it, signatures proven identical; see DIVERGENCES.md)
-- [ ] Login and account-creation plugin bases; Greymass and Jungle account-creation plugins.
-- [ ] `examples/transfer_privatekey` runs against Jungle 4.
+- [x] Login and account-creation plugin bases; Greymass and Jungle account-creation plugins. (bases live in the session module; AccountCreationPluginAnchor with the popup flow as an openDialog hook; AccountCreationPluginJungle4 faucet flow)
+- [x] `examples/transfer_privatekey` runs against Jungle 4. (verified live: tx 03e17ab81cac160fc7ed7d59b6f58a38be4a6f397189a1e0f90d0ad4117177b0 broadcast from wharfkit1111)
 
 ## Phase 4: contract, account, resources, token
 

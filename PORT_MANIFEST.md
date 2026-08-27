@@ -8,8 +8,8 @@ One row per upstream repo (all of github.com/wharfkit at 2026-08-26, plus greyma
 |---|---|---|---|---|---|
 | abicache | 1.2.4 | b8fd381 | port | done 1.2.4 | tests green against copied fixtures |
 | account | 1.4.1 | fd370fe | port | - | Phase 4 |
-| account-creation-plugin-anchor | 1.4.0 | d5138c2 | port | - | Phase 3; the blueprint's "AccountCreationPluginGreymass" (Greymass account creation service) |
-| account-creation-plugin-jungle4 | 1.2.0 | b9f2fab | port | - | Phase 3 |
+| account-creation-plugin-anchor | 1.4.0 | d5138c2 | port | done 1.4.0 | popup + postMessage becomes an openDialog embedder hook |
+| account-creation-plugin-jungle4 | 1.2.0 | b9f2fab | port | done 1.2.0 | upstream ships only a commented template test; faucet flow covered |
 | account-creation-plugin-metamask | 1.3.0 | 3b00177 | skip | - | needs the MetaMask browser extension |
 | account-creation-plugin-template | 1.0.0 | 653b653 | reference | - | template; informs examples/ |
 | actionstream | 0.4.0 | a7c8608 | port | - | Phase 4 extras; Roborovski action stream client over WebSocketProvider |

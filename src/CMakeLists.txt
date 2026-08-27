@@ -53,6 +53,8 @@ add_library(dwarfkit STATIC
   session/utils.cpp
   session/wallet.cpp
   plugins/wallet/privatekey.cpp
+  plugins/account_creation/anchor.cpp
+  plugins/account_creation/jungle4.cpp
   plugins/transact/autocorrect.cpp
   plugins/transact/cosigner.cpp
   plugins/transact/explorerlink.cpp
