@@ -157,3 +157,8 @@ Every intentional deviation from Wharfkit, one line of reason each. Anything not
 - The generated contracts/{atomicassets,atomicmarket,atomictoolsx}.ts modules are dkgen output checked into include/dwarfkit/atomicassets/contracts (namespaces dwarfkit::gen::*), proving dkgen on real generated-module inputs. The Asset object class is AtomicAsset (dwarfkit::Asset is the token amount type).
 - Endpoint options and responses are json (the ~1000 lines of typed options interfaces and response Structs are type-level). The wire behavior is exact: serializeQueryParams keeps booleans/numbers and stringifies the rest with JS String semantics (arrays comma-join), fixPostArguments stringifies page/limit/before/after/burned, POST bodies carry Content-Type: application/json, and buildQueryParams form-encodes like URLSearchParams. All 86 recorded fixtures resolve.
 - Object getters read the json API data (numeric fields accept the API's string or number forms; null img/name read as empty). Action builders return Result<Action> encoded through the embedded ABIs; ExtendedAsset prices build from the token_precision/token_symbol/amount triple exactly as upstream.
+
+## engine adapters
+
+- ABIDecoder's bounds-check helper is ensureBytes (was ensure): UE defines ensure() as a macro and BLUEPRINT.md bans that name from dwarfkit headers.
+- Both adapters ship as source only; there is no UE or godot-cpp toolchain in this repo, so they compile inside an engine project against the prebuilt static library (build instructions in each adapter README). The blueprint interfaces map 1:1; login responses auto-select the first wallet plugin and the chain/permission passed to the async node, since an interactive chooser is the embedder's UI concern.

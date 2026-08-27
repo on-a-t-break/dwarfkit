@@ -4,7 +4,7 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 
 ## Current state
 
-- Phase: 6 complete; Phase 4 extras done (actionstream, atomicassets). Next: Phase 7 engine adapters.
+- Phase: 7 complete (Unreal plugin + Godot GDExtension source; engine-buildable only inside an engine project). Next: Phase 8 packaging and docs.
 - In flight: nothing
 - Notes: CancelToken deferred to protocol-esr. strictExtensions decoding mode deferred until the session kit needs it (part of test/serializer.ts 'binary extensions' not ported). K1 byte-parity vectors verified against elliptic via node (scratchpad/elliptest). miniz was replaced with vendored zlib 1.3.1 for byte parity with pako (fixture hashes + ESR URIs); see DIVERGENCES.md.
 
@@ -58,8 +58,8 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 
 ## Phase 7: engine adapters
 
-- [ ] Unreal plugin, sample map with login + transfer.
-- [ ] Godot GDExtension, sample scene with login + transfer.
+- [x] Unreal plugin, sample map with login + transfer. (adapters/unreal/Dwarfkit: FHttp/FWebSockets providers, FileSessionStorage under ProjectSaved, Blueprint UDwarfkitUI + game-thread marshalling, UDwarfkitSubsystem, Login/Restore/Transact async nodes, ADwarfkitSampleActor drives the sample map; source-only, compiled inside a UE 5.4+ project against the prebuilt lib)
+- [x] Godot GDExtension, sample scene with login + transfer. (adapters/godot: HTTPClient/WebSocketPeer providers polled off-thread, DkSessionKit/DkSession RefCounted wrappers with signals, DkUserInterface with call_deferred + Semaphore, json<->Variant, demo login_transfer.gd; source-only, built with scons + godot-cpp 4.3+)
 
 ## Phase 8: packaging and docs
 

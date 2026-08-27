@@ -29,21 +29,21 @@ public:
     size_t getPosition() const { return pos_; }
 
     Result<void> advance(size_t bytes) {
-        DK_CHECK(ensure(bytes));
+        DK_CHECK(ensureBytes(bytes));
         pos_ += bytes;
         return {};
     }
 
     // Read one byte.
     Result<uint8_t> readByte() {
-        DK_CHECK(ensure(1));
+        DK_CHECK(ensureBytes(1));
         return array_[pos_++];
     }
 
     template <class T>
         requires std::is_integral_v<T>
     Result<T> readInt() {
-        DK_CHECK(ensure(sizeof(T)));
+        DK_CHECK(ensureBytes(sizeof(T)));
         std::make_unsigned_t<T> value = 0;
         for (size_t i = 0; i < sizeof(T); i++) {
             value |= static_cast<std::make_unsigned_t<T>>(array_[pos_ + i]) << (8 * i);
@@ -85,7 +85,7 @@ public:
     }
 
     Result<std::span<const uint8_t>> readArray(size_t length) {
-        DK_CHECK(ensure(length));
+        DK_CHECK(ensureBytes(length));
         const auto rv = array_.subspan(pos_, length);
         pos_ += length;
         return rv;
@@ -94,7 +94,7 @@ public:
     Result<std::string> readString();
 
 private:
-    Result<void> ensure(size_t bytes) const {
+    Result<void> ensureBytes(size_t bytes) const {
         if (!canRead(bytes)) {
             return err(ErrorKind::Invalid, "Read past end of buffer");
         }
