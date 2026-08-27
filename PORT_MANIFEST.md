@@ -52,7 +52,7 @@ One row per upstream repo (all of github.com/wharfkit at 2026-08-26, plus greyma
 | skill | - | f87fb83 | skip | - | Claude Code skill for wharfkit development, no library code |
 | starter | - | 253797a | reference | - | starter kit |
 | svelte-components | 0.7.0 | e338750 | skip | - | web UI components |
-| token | 1.2.0 | 14c6779 | port | - | Phase 4 |
+| token | 1.2.0 | 14c6779 | port | done 1.2.0 | Token + system_token embedded-ABI contract; symbol-bound fixtures re-keyed (stale-era recordings) |
 | transact-plugin-autocorrect | 1.4.1 | 6d4db2f | port | done 1.4.1 | upstream tests are fully commented out; construction and getException covered |
 | transact-plugin-cosigner | 1.1.0 | 7125c53 | port | done 1.1.0 | recorded tx id reproduced byte-exact; live-network "foo" test skipped |
 | transact-plugin-explorerlink | 1.0.1 | 6837e47 | port | done 1.0.1 | |
