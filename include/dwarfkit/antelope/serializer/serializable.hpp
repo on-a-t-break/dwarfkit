@@ -261,6 +261,18 @@ public:
     static constexpr std::string_view abiName = abi_name_str; \
     using DkBase = Base;
 
+// A struct with no serializable fields of its own (some ABIs declare empty
+// action argument structs).
+#define DK_NO_FIELDS                                   \
+    template <class DkFn>                              \
+    void dkForEach(DkFn&& dkFn) {                      \
+        ::dwarfkit::detail::visitBase(*this, dkFn);    \
+    }                                                  \
+    template <class DkFn>                              \
+    void dkForEach(DkFn&& dkFn) const {                \
+        ::dwarfkit::detail::visitBase(*this, dkFn);    \
+    }
+
 // Declare the (own, non-base) serializable fields, in ABI order.
 #define DK_FIELDS(...)                                 \
     template <class DkFn>                              \

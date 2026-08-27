@@ -4,7 +4,7 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 
 ## Current state
 
-- Phase: 5 complete (anchor, cloudwallet, cleos). Next: Phase 6 dkgen.
+- Phase: 6 complete (dkgen). Next: atomicassets + actionstream (Phase 4 extras), then Phase 7 engine adapters.
 - In flight: nothing
 - Notes: CancelToken deferred to protocol-esr. strictExtensions decoding mode deferred until the session kit needs it (part of test/serializer.ts 'binary extensions' not ported). K1 byte-parity vectors verified against elliptic via node (scratchpad/elliptest). miniz was replaced with vendored zlib 1.3.1 for byte parity with pako (fixture hashes + ESR URIs); see DIVERGENCES.md.
 
@@ -44,7 +44,7 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 - [x] `resources` + tests (numeric parity). (pulled forward for the resource provider plugin; RAM/REX/PowerUp exact values on eos/jungle/wax fixtures; UInt128/Int128 gained multiply/divide with the upstream rounding modes)
 - [x] `token` + tests. (Token + embedded system.token contract; balance fixtures re-keyed under current-antelope bodies)
 - [x] `account` + tests. (AccountKit<Data>/Account<Data> templates for chain-specific account objects; Permission/Resource; embedded eosio system contract; broadcast fixtures byte-matched)
-- [ ] Any additional library packages found in Phase 0 (Atomic Assets client, Shamir).
+- [ ] Any additional library packages found in Phase 0 (Atomic Assets client, actionstream). Deferred until after dkgen: the atomicassets contracts/ modules are @wharfkit/cli generated output, so dkgen produces them.
 
 ## Phase 5: wallets
 
@@ -54,7 +54,7 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 
 ## Phase 6: dkgen
 
-- [ ] Generator, offline `--abi` mode, golden-output tests for `eosio.token`, `eosio`, `atomicassets`.
+- [x] Generator, offline `--abi` mode, golden-output tests for `eosio.token`, `eosio`, `atomicassets`. (tools/dkgen emits a self-contained header: abiBlob/abi(), Types with DK_STRUCT/DK_VARIANT in dependency order, Contract subclass with typed actions and table accessors; --abi accepts json or a base64 blob; checked-in golden headers compile in the test binary and encode byte-identically to the ABI serializer)
 
 ## Phase 7: engine adapters
 

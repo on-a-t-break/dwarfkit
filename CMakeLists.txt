@@ -17,14 +17,15 @@ include(cmake/CompilerWarnings.cmake)
 add_subdirectory(third_party)
 add_subdirectory(src)
 
+# tools/, examples/ and adapters/ join the build as their phases land (BLUEPRINT.md section 10)
+# dkgen precedes tests so the golden-output tests can link dkgen_lib
+if(DK_BUILD_TOOLS AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tools/dkgen/CMakeLists.txt)
+  add_subdirectory(tools/dkgen)
+endif()
+
 if(DK_BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)
-endif()
-
-# tools/, examples/ and adapters/ join the build as their phases land (BLUEPRINT.md section 10)
-if(DK_BUILD_TOOLS AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tools/dkgen/CMakeLists.txt)
-  add_subdirectory(tools/dkgen)
 endif()
 if(DK_BUILD_EXAMPLES AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/examples/CMakeLists.txt)
   add_subdirectory(examples)

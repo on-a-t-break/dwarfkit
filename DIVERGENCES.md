@@ -137,3 +137,11 @@ Every intentional deviation from Wharfkit, one line of reason each. Anything not
 ## wallet-plugin-cleos
 
 - The copy-to-clipboard button's onClick (navigator.clipboard) has no meaning here; the button element keeps its label for UIs that can render a copy affordance. The prompted command and decoded transaction json (4-space indent, actions replaced in place) match upstream.
+
+## dkgen (@wharfkit/cli generate)
+
+- Emits one self-contained C++ header instead of a TypeScript module: `namespace dwarfkit::gen::<account>` (dots become underscores) with abiBlob/abi(), a Types namespace of DK_STRUCT/DK_VARIANT declarations, and a Contract subclass whose typed action helpers encode the argument struct and hand the hex to the base action(); tables get accessor methods returning the json-row Table. The ActionParams/RowType/TableMap type-level machinery is representable directly as the struct types themselves.
+- Type resolution mirrors the cli: one level of abi.types alias resolution, ABI struct/variant names win over builtins, decorators wrap as std::vector / std::optional / BinaryExtension. Struct ordering follows the cli's dependency-first, first-occurrence-wins walk (with a visiting set so self/cyclic references terminate).
+- ABI field names that are C++ keywords are a hard error: DK_FIELDS derives the wire name from the member identifier. Method names for actions/tables are sanitized (dots removed, keyword suffix underscore, leading digit prefixed).
+- The cli's prettier/eslint pass has no equivalent; output formatting is fixed. action_results interfaces are not emitted (readonly returns json).
+- DK_NO_FIELDS was added to the serializer macros for ABIs that declare empty action argument structs (e.g. atomicassets init).

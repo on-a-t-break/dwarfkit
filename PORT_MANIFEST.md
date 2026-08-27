@@ -22,7 +22,7 @@ One row per upstream repo (all of github.com/wharfkit at 2026-08-26, plus greyma
 | buoy-client | 1.0.4 | 7dc9c71 | port | done 1.0.4 | send/receive/Listener as blocking calls over the transport interfaces; live cb.anchor.link round-trip verified |
 | chain-logo | - | 47e69e4 | reference | - | logo CDN assets |
 | chains | - | EMPTY | skip | - | empty repository |
-| cli | 2.11.0 | 0a2848c | port | - | Phase 6, as dkgen (generate subcommand only) |
+| cli (dkgen) | 2.11.0 | 0a2848c | port | - | Phase 6, as dkgen (generate subcommand only) |
 | common | 1.5.0 | 31f7106 | port | done 1.5.0 | Chains/ChainDefinition/explorer/logo/token; Canceled maps to ErrorKind::Canceled |
 | conformance | 0.1.0 | 39834b9 | reference | - | float-op oracle contract on Jungle 4 (conform.gm); optional DK_LIVE_TESTS consumer for float parity |
 | console-renderer | 0.1.1 | b7146d3 | reference | - | informs ConsoleUserInterface |

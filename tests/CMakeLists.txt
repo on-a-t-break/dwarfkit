@@ -2,6 +2,12 @@ file(GLOB_RECURSE DK_TEST_SOURCES CONFIGURE_DEPENDS unit/*.test.cpp)
 
 add_executable(dwarfkit_tests main.cpp util/mock_session.cpp ${DK_TEST_SOURCES})
 target_link_libraries(dwarfkit_tests PRIVATE dwarfkit dk_doctest)
+if(TARGET dkgen_lib)
+  target_link_libraries(dwarfkit_tests PRIVATE dkgen_lib)
+  target_include_directories(dwarfkit_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+  target_compile_definitions(dwarfkit_tests PRIVATE DK_HAVE_DKGEN
+    DK_GEN_DIR="${CMAKE_CURRENT_SOURCE_DIR}/gen")
+endif()
 # DOCTEST_CONFIG_USE_STD_HEADERS: doctest's forward declarations of std types
 # conflict with the VS2022 17.14 STL
 target_compile_definitions(dwarfkit_tests PRIVATE
