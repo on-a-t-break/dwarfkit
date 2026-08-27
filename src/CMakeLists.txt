@@ -53,6 +53,16 @@ add_library(dwarfkit STATIC
   session/utils.cpp
   session/wallet.cpp
   plugins/wallet/privatekey.cpp
+  plugins/transact/autocorrect.cpp
+  plugins/transact/cosigner.cpp
+  plugins/transact/explorerlink.cpp
+  plugins/transact/finality.cpp
+  plugins/transact/resource_provider.cpp
+  resources/powerup.cpp
+  resources/ram.cpp
+  resources/resources.cpp
+  resources/rex.cpp
+  msigs/msigs.cpp
 )
 
 target_include_directories(dwarfkit PUBLIC

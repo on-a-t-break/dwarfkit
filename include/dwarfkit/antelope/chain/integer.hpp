@@ -21,6 +21,11 @@ namespace dwarfkit {
 // - Clamp: clamps the value within the supported range.
 enum class OverflowBehavior { Throw, Truncate, Clamp };
 
+// Division rounding, named like the upstream DivisionBehavior union: floor is
+// BN.div (truncation toward zero), round is half away from zero, ceil rounds
+// away from zero.
+enum class DivisionBehavior { floor, round, ceil };
+
 // Matches FCs behavior: values that need more than 32 bits render as strings.
 json intToJSON(int64_t value);
 json intToJSON(uint64_t value);
@@ -69,8 +74,18 @@ public:
         return rv;
     }
 
+    // Wrapping multiply and division with the upstream DivisionBehavior
+    // rounding names ('floor' is BN.div, truncation toward zero).
+    UInt128 multiplying(const UInt128& other) const;
+    Result<UInt128> dividing(const UInt128& other,
+                             DivisionBehavior behavior = DivisionBehavior::floor) const;
+    Result<UInt128> remainder(const UInt128& other) const;
+
     // Truncating cast (Wharfkit .cast(UInt64)).
     constexpr uint64_t toUInt64() const { return lo; }
+    double toDouble() const {
+        return static_cast<double>(hi) * 18446744073709551616.0 + static_cast<double>(lo);
+    }
 
     std::string toString() const;
     json toJSON() const;
@@ -124,8 +139,13 @@ public:
     }
     constexpr Int128 negated() const { return Int128{~lo, ~hi}.adding(Int128(int64_t(1))); }
 
+    Int128 multiplying(const Int128& other) const;
+    Result<Int128> dividing(const Int128& other,
+                            DivisionBehavior behavior = DivisionBehavior::floor) const;
+
     constexpr int64_t toInt64() const { return static_cast<int64_t>(lo); }
     constexpr uint64_t toUInt64() const { return lo; }
+    double toDouble() const;
 
     std::string toString() const;
     json toJSON() const;

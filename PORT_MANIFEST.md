@@ -41,10 +41,10 @@ One row per upstream repo (all of github.com/wharfkit at 2026-08-26, plus greyma
 | js | 4.0.0-rc2 | 639cf3a | reference | - | upcoming all-in-one v4 bundle; watch for API changes |
 | login-plugin-template | 1.0.0 | 0610c4b | reference | - | template; informs examples/ |
 | mock-data | 1.3.1 | 9cf701d | port | done 1.3.1 | tests/util/mock_fetch_provider.hpp + mock_session.{hpp,cpp}; not shipped in the library |
-| msigs | 0.3.1 | c8ccca7 | port | - | Phase 4 extras; Roborovski msigs API client. NOTE: the blueprint's "msig proposal transact plugin" does not exist as an org repo |
+| msigs | 0.3.1 | c8ccca7 | port | done 0.3.1 | MsigsClient with json responses; representative test subset (api.ts repeats shapes) |
 | protocol-esr | 1.6.1 | 1b61ed2 | port | done 1.6.1 | createIdentityRequest takes EsrLoginContext until the session kit lands |
 | protocol-scatter | 1.4.0 | 846bd39 | skip | - | browser window injection |
-| resources | 1.6.0 | 0af2e3c | port | - | Phase 4 |
+| resources | 1.6.0 | 0af2e3c | port | done 1.6.0 | RAM/REX/PowerUp numeric parity on recorded eos/jungle/wax fixtures |
 | roborovski | 1.1.0 | 2025112 | port | - | Phase 4 extras; Roborovski API client |
 | sealed-messages | 1.2.0 | 8fc32b0 | port | done 1.2.0 | folded into protocol_esr; AES byte parity proven against the npm package (README mentions Shamir but src only seals/unseals) |
 | session | 1.6.1 | 467f049 | port | done 1.6.1 | kit/session/login/transact/storage/ui/wallet/account-creation; tests green on recorded fixtures (ContractKit cases deferred to the contract kit) |
@@ -53,13 +53,13 @@ One row per upstream repo (all of github.com/wharfkit at 2026-08-26, plus greyma
 | starter | - | 253797a | reference | - | starter kit |
 | svelte-components | 0.7.0 | e338750 | skip | - | web UI components |
 | token | 1.2.0 | 14c6779 | port | - | Phase 4 |
-| transact-plugin-autocorrect | 1.4.1 | 6d4db2f | port | - | Phase 3 |
-| transact-plugin-cosigner | 1.1.0 | 7125c53 | port | - | Phase 3 |
-| transact-plugin-explorerlink | 1.0.1 | 6837e47 | port | - | Phase 3 |
-| transact-plugin-finality-callback | 1.0.0 | c1ba8ce | port | - | Phase 3 |
-| transact-plugin-finality-checker | 1.0.0 | 9a70f93 | port | - | Phase 3 |
-| transact-plugin-mock | 1.1.0 | 83e9be1 | port | - | Phase 3 |
-| transact-plugin-resource-provider | 1.2.0 | 92d8637 | port | - | Phase 3 |
+| transact-plugin-autocorrect | 1.4.1 | 6d4db2f | port | done 1.4.1 | upstream tests are fully commented out; construction and getException covered |
+| transact-plugin-cosigner | 1.1.0 | 7125c53 | port | done 1.1.0 | recorded tx id reproduced byte-exact; live-network "foo" test skipped |
+| transact-plugin-explorerlink | 1.0.1 | 6837e47 | port | done 1.0.1 | |
+| transact-plugin-finality-callback | 1.0.0 | c1ba8ce | port | done 1.0.0 | blocking waits with configurable delays |
+| transact-plugin-finality-checker | 1.0.0 | 9a70f93 | port | done 1.0.0 | ships no tests upstream |
+| transact-plugin-mock | 1.1.0 | 83e9be1 | port | done 1.1.0 | tests/util mock plugins (with mock-data) |
+| transact-plugin-resource-provider | 1.2.0 | 92d8637 | port | done 1.2.0 | filtering + plugin tests on recorded fixtures; RAM fees priced via the resources module |
 | transact-plugin-template | 1.0.0 | 215ee56 | reference | - | template; ported as examples/ |
 | tutorial-client | 0.0.0 | 26fcb26 | reference | - | tutorial app |
 | tutorial-todo-contract | - | 17f1ce6 | reference | - | sample contract; dkgen golden-test candidate |

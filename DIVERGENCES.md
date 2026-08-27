@@ -78,3 +78,14 @@ Every intentional deviation from Wharfkit, one line of reason each. Anything not
 | `@wharfkit/mock-data` npm package | tests/util mock headers, not shipped | Test-only surface |
 | Upstream WalletPluginPrivateKey description templates "undefined" (reads the never-set data.publicKey) | Uses the actual public key string | Faithful reproduction would embed the word "undefined" |
 | `processReturnValues` truthiness check on return_value_hex_data | Explicit absent-or-empty-string check | JS falsy semantics |
+| BN + js-big-decimal arithmetic in resources | 128-bit integer multiply/divide plus exact decimal division helpers (scale, round half up, parse back) | Same digits on the recorded fixtures; ties round half up where js-big-decimal may differ |
+| `Resources.v1` property | `v1()` accessor returning the API view | C++ members cannot safely back-reference a movable parent |
+| `PowerUpStateResource.reserved` typed Int64 but asserted against floats | Truncating int64 division, asserted as 0 | The upstream assertion is vacuous (BN truncates both sides to 0) |
+| resource provider / autocorrect Transfer and BuyRAMBytes exports | Nested types on the plugin classes | Avoids colliding with the token kit's Transfer |
+| Plugin translation bundles (en/ko/zh-Hans/zh-Hant) | en embedded; other locales omitted | Keeps sources ASCII; add locales via ui.addTranslations |
+| Resource provider 120s fee-prompt expiry timer | Not replicated (prompt has no timeout) | Upstream marks it TODO-remove; needs a timer thread |
+| finality plugins schedule polling with setTimeout (checker's hook returns a never-resolving promise) | Blocking waits inside the afterBroadcast hook with configurable delays; the checker returns after its final prompt | No event loop; transact runs on a worker (BLUEPRINT.md 5.2) |
+| autocorrect races a cancelable "Checking transaction" prompt against the correction | ui.status message before correcting | Blocking prompts cannot race |
+| autocorrect `register` throws without a UI | Installs a hook that reports the error at transact time | No exceptions in the public API |
+| Old-antelope test recordings (POST get_info, uncompressed send_transaction, mismatched status text) | Fixtures re-keyed/aligned to the current wire format where signatures proved identical | mock-data lookups are keyed by the exact request bytes; the crypto parity is unchanged |
+| `@wharfkit/msigs` loose response interfaces | json responses | Upstream never runs them through the serializer |

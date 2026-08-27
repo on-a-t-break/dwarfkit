@@ -241,4 +241,134 @@ json Int128::toJSON() const {
     return isNegative() ? json(-static_cast<int64_t>(magnitude.lo)) : json(magnitude.lo);
 }
 
+// ---- 128-bit multiply and divide -------------------------------------------
+
+namespace {
+
+// 64x64 -> 128 partial products
+UInt128 mul64(uint64_t a, uint64_t b) {
+    const uint64_t aLo = a & 0xffffffffull, aHi = a >> 32;
+    const uint64_t bLo = b & 0xffffffffull, bHi = b >> 32;
+    const uint64_t p0 = aLo * bLo;
+    const uint64_t p1 = aLo * bHi;
+    const uint64_t p2 = aHi * bLo;
+    const uint64_t p3 = aHi * bHi;
+    uint64_t lo = p0 + (p1 << 32);
+    uint64_t carry = lo < p0 ? 1u : 0u;
+    const uint64_t lo2 = lo + (p2 << 32);
+    if (lo2 < lo) carry++;
+    const uint64_t hi = p3 + (p1 >> 32) + (p2 >> 32) + carry;
+    return {lo2, hi};
+}
+
+// shift-subtract long division; quotient and remainder
+void divmod128(const UInt128& num, const UInt128& den, UInt128& quotient, UInt128& rem) {
+    quotient = {};
+    rem = {};
+    for (int i = 127; i >= 0; i--) {
+        // rem <<= 1
+        rem.hi = (rem.hi << 1) | (rem.lo >> 63);
+        rem.lo <<= 1;
+        // rem |= bit i of num
+        const uint64_t bit = i >= 64 ? (num.hi >> (i - 64)) & 1u : (num.lo >> i) & 1u;
+        rem.lo |= bit;
+        if (rem >= den) {
+            rem = rem.subtracting(den);
+            if (i >= 64) {
+                quotient.hi |= 1ull << (i - 64);
+            } else {
+                quotient.lo |= 1ull << i;
+            }
+        }
+    }
+}
+
+}  // namespace
+
+UInt128 UInt128::multiplying(const UInt128& other) const {
+    UInt128 rv = mul64(lo, other.lo);
+    rv.hi += lo * other.hi + hi * other.lo;  // wrapping, like BN + truncate
+    return rv;
+}
+
+Result<UInt128> UInt128::dividing(const UInt128& other, DivisionBehavior behavior) const {
+    if (other == UInt128::zero()) {
+        return err(ErrorKind::Invalid, "Division by zero");
+    }
+    UInt128 quotient, rem;
+    divmod128(*this, other, quotient, rem);
+    switch (behavior) {
+        case DivisionBehavior::floor:
+            break;
+        case DivisionBehavior::round: {
+            // round half away from zero: rem*2 >= den
+            const UInt128 doubled{rem.lo << 1, (rem.hi << 1) | (rem.lo >> 63)};
+            if (doubled >= other) {
+                quotient = quotient.adding(UInt128(uint64_t(1)));
+            }
+            break;
+        }
+        case DivisionBehavior::ceil:
+            if (!(rem == UInt128::zero())) {
+                quotient = quotient.adding(UInt128(uint64_t(1)));
+            }
+            break;
+    }
+    return quotient;
+}
+
+Result<UInt128> UInt128::remainder(const UInt128& other) const {
+    if (other == UInt128::zero()) {
+        return err(ErrorKind::Invalid, "Division by zero");
+    }
+    UInt128 quotient, rem;
+    divmod128(*this, other, quotient, rem);
+    return rem;
+}
+
+Int128 Int128::multiplying(const Int128& other) const {
+    const bool negative = isNegative() != other.isNegative();
+    const Int128 a = isNegative() ? negated() : *this;
+    const Int128 b = other.isNegative() ? other.negated() : other;
+    const UInt128 magnitude = UInt128{a.lo, a.hi}.multiplying(UInt128{b.lo, b.hi});
+    const Int128 rv{magnitude.lo, magnitude.hi};
+    return negative ? rv.negated() : rv;
+}
+
+Result<Int128> Int128::dividing(const Int128& other, DivisionBehavior behavior) const {
+    if (other == Int128::zero()) {
+        return err(ErrorKind::Invalid, "Division by zero");
+    }
+    const bool negative = isNegative() != other.isNegative();
+    const Int128 a = isNegative() ? negated() : *this;
+    const Int128 b = other.isNegative() ? other.negated() : other;
+    UInt128 quotient, rem;
+    divmod128(UInt128{a.lo, a.hi}, UInt128{b.lo, b.hi}, quotient, rem);
+    switch (behavior) {
+        case DivisionBehavior::floor:
+            break;  // BN.div truncates toward zero
+        case DivisionBehavior::round: {
+            const UInt128 doubled{rem.lo << 1, (rem.hi << 1) | (rem.lo >> 63)};
+            if (doubled >= UInt128{b.lo, b.hi}) {
+                quotient = quotient.adding(UInt128(uint64_t(1)));
+            }
+            break;
+        }
+        case DivisionBehavior::ceil:
+            // rounds away from zero in both directions (upstream divCeil)
+            if (!(rem == UInt128::zero())) {
+                quotient = quotient.adding(UInt128(uint64_t(1)));
+            }
+            break;
+    }
+    const Int128 magnitude{quotient.lo, quotient.hi};
+    return negative ? magnitude.negated() : magnitude;
+}
+
+double Int128::toDouble() const {
+    const Int128 magnitude = isNegative() ? negated() : *this;
+    const double value = UInt128{magnitude.lo, magnitude.hi}.toDouble();
+    return isNegative() ? -value : value;
+}
+
 }  // namespace dwarfkit
