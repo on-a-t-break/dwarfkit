@@ -4,7 +4,7 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 
 ## Current state
 
-- Phase: 8 complete. All blueprint phases done. strictExtensions decoding landed post-blueprint; remaining deferred item: antelope p2p module.
+- Phase: 8 complete. All blueprint phases done, and both deferred items have landed (strictExtensions decoding, antelope p2p module). Nothing tracked remains; future work is upstream re-syncs.
 - In flight: nothing
 - Notes: CancelToken deferred to protocol-esr. strictExtensions decoding ported (DecodeOptions on both static and dynamic decode; default synthesis with circular detection). K1 byte-parity vectors verified against elliptic via node (scratchpad/elliptest). miniz was replaced with vendored zlib 1.3.1 for byte parity with pako (fixture hashes + ESR URIs); see DIVERGENCES.md.
 
@@ -21,7 +21,7 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 - [x] Crypto: K1 via libsecp256k1 with the elliptic-compatible nonce function; R1 via trezor-crypto; WA parse/verify; `PublicKey`, `PrivateKey`, `Signature` full method sets; key string formats. (WA verify deferred to serializer item; WA string parse/serialize done; K1 byte-parity proven vs elliptic)
 - [x] `ABI` model and `resolveType`, `ABIEncoder`/`ABIDecoder`, builtins, `Serializer` (static, dynamic, `synthesize`, `stringify`), `DK_STRUCT`/`DK_FIELDS`/`DK_VARIANT`/`DK_TYPE_ALIAS`/`BinaryExtension`, `Action`, `Transaction`, `SignedTransaction`, `PackedTransaction`, authority types. (serializer.ts, webauthn.ts and the transaction/authority chain.ts cases ported; typestresser byte-parity green; strictExtensions deferred)
 - [x] `APIClient`, `APIProvider`, `FetchProvider`, `CurlFetchProvider`, `MockFetchProvider`, `v1.chain` and `v1.history` with all `types.ts` structs.
-- [x] All `antelope/test/tests/*.ts` ported and green against copied fixtures. (except p2p.ts, deferred with the p2p/ module; bug-report.ts is an empty template; TS-runtime-only cases documented in DIVERGENCES.md)
+- [x] All `antelope/test/tests/*.ts` ported and green against copied fixtures. (p2p.ts ported with the p2p/ module; bug-report.ts is an empty template; TS-runtime-only cases documented in DIVERGENCES.md)
 
 ## Phase 2: common, abicache, signing-request, protocol-esr
 

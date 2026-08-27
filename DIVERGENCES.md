@@ -167,3 +167,9 @@ Every intentional deviation from Wharfkit, one line of reason each. Anything not
 
 - find_package(Dwarfkit) uses a hand-rolled config creating imported targets from the installed archives (dwarfkit, dk_trezor_crypto, dk_zlib, secp256k1, secp256k1_precomputed) instead of a CMake export set: the FetchContent-built secp256k1 needs no export support of its own, and the object-library secp256k1_precomputed installs through a wrapper archive. The config forwards cxx_std_20 and MSVC's /Zc:preprocessor (the DK_FIELDS variadic macros need the conformant preprocessor in consumers too).
 - The vendored tl::expected and nlohmann headers install alongside dwarfkit's (they appear in public headers). dwarfkit_curl is not installed; engines bring their own transports and other consumers can add_subdirectory/FetchContent the repo.
+
+## antelope p2p
+
+- The EventEmitter surfaces become std::function handlers registered through onData/onError/onClose (provider) and onMessage/onceMessage/onError/onClose (client); handlers fire synchronously when the lower layer feeds data. removeListener takes the id returned at registration (std::function has no equality).
+- The heartbeat timer is embedder-supplied through setTimeoutImpl (there is no default event loop); with no impl the heartbeat option is inert. The client owns no socket: P2PProvider implementations bridge to the engine or OS transport, and SimpleEnvelopeP2PProvider ports the 4-byte little-endian framing with the 8 MB read limit unchanged.
+- BlockHeader::id() returns Result (hashing the encoded header can surface encode errors); the camelCase TS field names are kept as member names, so json forms match upstream.

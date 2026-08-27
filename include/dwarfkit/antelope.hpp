@@ -23,5 +23,6 @@
 #include <dwarfkit/antelope/chain/time.hpp>
 #include <dwarfkit/antelope/chain/transaction.hpp>
 #include <dwarfkit/antelope/crypto.hpp>
+#include <dwarfkit/antelope/p2p/client.hpp>
 #include <dwarfkit/antelope/serializer.hpp>
 #include <dwarfkit/antelope/utils.hpp>

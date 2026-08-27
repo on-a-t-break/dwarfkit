@@ -33,6 +33,7 @@ add_library(dwarfkit STATIC
   antelope/api/v1/chain.cpp
   antelope/api/v1/history.cpp
   antelope/api/v1/types.cpp
+  antelope/p2p/p2p.cpp
   abicache/abicache.cpp
   common/chains.cpp
   signing_request/base64u.cpp
