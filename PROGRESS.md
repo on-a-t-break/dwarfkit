@@ -4,7 +4,7 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 
 ## Current state
 
-- Phase: 4 complete (contract, resources, token, account). Next: Phase 5 wallet plugins (anchor, cloudwallet, cleos).
+- Phase: 5 in progress. WalletPluginAnchor done. Next: WalletPluginCloudWallet, then WalletPluginCleos.
 - In flight: nothing
 - Notes: CancelToken deferred to protocol-esr. strictExtensions decoding mode deferred until the session kit needs it (part of test/serializer.ts 'binary extensions' not ported). K1 byte-parity vectors verified against elliptic via node (scratchpad/elliptest). miniz was replaced with vendored zlib 1.3.1 for byte parity with pako (fixture hashes + ESR URIs); see DIVERGENCES.md.
 
@@ -48,7 +48,7 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 
 ## Phase 5: wallets
 
-- [ ] `WalletPluginAnchor` with qrcodegen util; `examples/anchor_login` (console prints QR as text).
+- [x] `WalletPluginAnchor` with qrcodegen util; `examples/anchor_login` (console prints QR as text). (native + web transports over openLink hook; interactive mode chooser degrades to option-driven selection; login-and-sign test stubs buoy with a fake WebSocketProvider)
 - [ ] `WalletPluginCloudWallet` protocol layer + `WebViewBridge` interface.
 - [ ] `WalletPluginCleos`.
 

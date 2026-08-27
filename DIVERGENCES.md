@@ -113,3 +113,16 @@ Every intentional deviation from Wharfkit, one line of reason each. Anything not
 - `Permission` mutators return `Result<void>` in place of throws. The unused exported TS type aliases (PermissionData, ActionData, AddKeyActionParam) are dropped; `LinkedAction` is `api::v1::AccountLinkedAction`.
 - The generated `contracts/eosio.ts` module becomes `system_contract::{abiBlob, abi(), contract()}` like the token package's system_token.
 - The one recorded balance query with the old-era empty bounds is re-keyed under the current-behavior body (same rationale as the token package).
+
+## wallet-plugin-anchor
+
+- Browser windows become the `openLink` embedder hook (same pattern as the account-creation plugin's openDialog): the native transport uses it for the esr: deep-link auto-launch, the web transport for the authenticator URL. When no hook opens a window the web transport shows the URL as a link prompt (the upstream popup-blocked path). Popup-closed polling is dropped.
+- The interactive mode chooser and mid-login transport switch (promptForMode, loginWithSwitch, recoverLogin) rely on prompt button onClick callbacks that the C++ PromptElement cannot carry. Mode selection comes from WalletPluginAnchorOptions.mode, setMode, or per-call arbitrary data {"anchor": {"mode": ...}}, defaulting to the app transport. AnchorMode is an enum; readMode/writeMode/readLoginOptions are otherwise 1:1.
+- AnchorRequestCancelledError maps to ErrorKind::Canceled (waitForCallback already returns that kind for rejected payloads). The webFallbackDelayMs timer, isKnownMobile()/isAppleHandheld() user-agent sniffing (a knownMobile option hides the QR) and ledger navigator detection have no browser equivalents.
+- The web transport's identityProof is a typed IdentityProof resolved from the callback payload; upstream returns a loose {signature, signedRequest} object there.
+- The prompt-vs-callback race collapses to display-prompt-then-block-on-callback: UserInterface::prompt displays and returns, waitForCallback blocks with the transaction expiration as timeout (sign) and the plugin CancelToken.
+- signing-request: ResolvedSigningRequest::getIdentityProof on a v2 request now yields an empty scope instead of erroring; upstream's `getIdentityScope()!` flows null into Name.from, which bn.js coerces to 0.
+
+## qrcodegen
+
+- Nayuki's QR Code generator (MIT) is vendored in third_party/qrcodegen for the examples; examples/anchor_login renders prompt qr elements as half-block terminal QR codes.

@@ -39,7 +39,10 @@ public:
             init["headers"] = std::move(headers);
         }
         const auto filenameFor = [&](const json& params) {
-            const std::string key = request.url + params.dump();
+            // replace, not strict: a binary body (e.g. a sealed buoy message)
+            // must miss the fixture lookup, not abort it
+            const std::string key =
+                request.url + params.dump(-1, ' ', false, json::error_handler_t::replace);
             const std::vector<uint8_t> keyBytes(key.begin(), key.end());
             return dataDir_ + "/" + Checksum160::hash(keyBytes).hexString() + ".json";
         };

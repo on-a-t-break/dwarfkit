@@ -74,6 +74,11 @@ add_library(dwarfkit STATIC
   account/system_contract.cpp
   account/permission.cpp
   account/resource.cpp
+  plugins/wallet/anchor.cpp
+  plugins/wallet/anchor_chains.cpp
+  plugins/wallet/anchor_mode.cpp
+  plugins/wallet/anchor_translations.cpp
+  plugins/wallet/anchor_transports.cpp
 )
 
 target_include_directories(dwarfkit PUBLIC

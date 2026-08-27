@@ -926,13 +926,12 @@ Result<IdentityProof> ResolvedSigningRequest::getIdentityProof(const Signature& 
     if (!request.isIdentity()) {
         return err(ErrorKind::Invalid, "Not a identity request");
     }
+    // v2 identity requests have no scope; upstream's `getIdentityScope()!`
+    // flows null into Name.from, which coerces to an empty name
     const auto scope = request.getIdentityScope();
-    if (!scope) {
-        return err(ErrorKind::Invalid, "Missing identity scope");
-    }
     IdentityProof proof;
     proof.chainId = chainId;
-    proof.scope = *scope;
+    proof.scope = scope.value_or(Name());
     proof.expiration = transaction.expiration;
     proof.signer = signer;
     proof.signature = sig;
