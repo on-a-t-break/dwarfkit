@@ -55,7 +55,9 @@ if (result) {
 | @wharfkit/cli `generate` | `dkgen` tool | done, golden-output tests |
 | engine adapters | `adapters/unreal`, `adapters/godot` | source complete, build inside an engine project |
 
-Not ported (browser-only or not applicable): web-renderer, react/vue hooks, browser-extension wallet plugins (Wombat, TokenPocket, Scatter...), p2p module. See PORT_MANIFEST.md for every upstream repo's disposition.
+Wallet plugins: `WalletPluginPrivateKey`, `WalletPluginAnchor`, `WalletPluginCleos`, `WalletPluginCloudWallet`, and `WalletPluginTackleBox` for [TackleBox](https://github.com/on-a-t-break/tacklebox), a native C++ Antelope wallet that speaks the wallet half of anchor-link.
+
+Not ported (browser-only or not applicable): web-renderer, react/vue hooks, browser-extension wallet plugins (Wombat, TokenPocket, Scatter...). See PORT_MANIFEST.md for every upstream repo's disposition.
 
 ## Building
 

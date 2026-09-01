@@ -65,6 +65,7 @@ One row per upstream repo (all of github.com/wharfkit at 2026-08-26, plus greyma
 | tutorial-todo-contract | - | 17f1ce6 | reference | - | sample contract; dkgen golden-test candidate |
 | ui-plugin-template | 0.1.0 | 0906118 | reference | - | template |
 | wallet-plugin-anchor | 1.7.3 | c460bc2 | port | done 1.7.3 | native+web transports; popups/mode chooser become openLink hook + option-driven mode (DIVERGENCES) |
+| (no upstream) TackleBox | - | - | addition | done | `WalletPluginTackleBox`: TackleBox implements the anchor-link wallet side, so this reuses the Anchor native transport with its own id, storage and translations. Native only, and no URL scheme to deep link, so login goes by QR or pasted URI |
 | wallet-plugin-cleos | 1.2.0 | 3c86de8 | port | done 1.2.0 | dev tool; clipboard button label-only |
 | wallet-plugin-cloudwallet | 1.6.5 | 5017944 | port | done 1.6.5 | popup/postMessage becomes WebViewBridge; login-and-sign covered with a scripted bridge |
 | wallet-plugin-gatewallet | 1.1.0 | d59fa2a | skip | - | Scatter browser protocol |

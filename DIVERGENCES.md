@@ -255,3 +255,17 @@ error through the normal `Result<T>` channel.
   `[A-Za-z0-9_.]`. Names come from a downloaded ABI and are emitted both inside
   string literals and as bare identifiers, so a quote or newline would inject
   code into the header the developer compiles.
+
+## TackleBox wallet plugin
+
+- `WalletPluginTackleBox` has no upstream counterpart. TackleBox implements the
+  wallet half of the anchor-link protocol (it answers an identity request with
+  `link_ch`/`link_key`/`link_name` and unseals requests pushed to that buoy
+  channel), so the plugin reuses `anchor::NativeTransport` rather than defining
+  a second protocol. It carries its own plugin id, storage namespace and
+  translations.
+- It is native only: TackleBox has no web authenticator, so there is no browser
+  mode and no mode switching, and `sign` never has to pick a route.
+- TackleBox registers no URL scheme, so `openLink` is normally left unset and
+  the login request reaches the wallet as a QR code or a pasted `esr:` URI,
+  which is the transport's behavior when nothing can be opened.
