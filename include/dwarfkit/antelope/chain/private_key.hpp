@@ -5,6 +5,7 @@
 #include <string_view>
 
 #include <dwarfkit/antelope/chain/bytes.hpp>
+#include <dwarfkit/antelope/utils.hpp>
 #include <dwarfkit/antelope/chain/checksum.hpp>
 #include <dwarfkit/antelope/chain/key_type.hpp>
 #include <dwarfkit/antelope/chain/public_key.hpp>
@@ -20,6 +21,15 @@ public:
 
     PrivateKey() = default;
     PrivateKey(KeyType type, Bytes data) : type(type), data(std::move(data)) {}
+
+    // Wipe the secret rather than leaving it in freed heap. Copies each wipe
+    // their own buffer; this cannot cover a moved-from vector's old block, so
+    // it reduces exposure rather than eliminating it.
+    ~PrivateKey() { secureZero(data.array); }
+    PrivateKey(const PrivateKey&) = default;
+    PrivateKey& operator=(const PrivateKey&) = default;
+    PrivateKey(PrivateKey&&) = default;
+    PrivateKey& operator=(PrivateKey&&) = default;
 
     // Create from a WIF (5...) or Antelope/EOSIO (PVT_...) string.
     static Result<PrivateKey> from(std::string_view value) { return fromString(value); }

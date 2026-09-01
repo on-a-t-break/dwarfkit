@@ -186,8 +186,8 @@ Result<SigningRequest> TransactPluginAutoCorrect::correct(const SigningRequest& 
         if (exception.is_object() && exception.contains("stack") &&
             exception["stack"].is_array() && !exception["stack"].empty() &&
             exception["stack"][0].is_object()) {
-            const std::string name = exception.value("name", "");
-            const json& data = exception["stack"][0]["data"];
+            const std::string name = jsonStr(exception, "name");
+            const json& data = jsonAt(exception["stack"][0], "data");
             if (name == "tx_net_usage_exceeded") {
                 const double needed = data.value("net_usage", 0.0) * multiplier;
                 if (hasFeature(config, ChainFeature::PowerUp)) {

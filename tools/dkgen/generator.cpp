@@ -277,7 +277,45 @@ std::string blobLiteral(const std::string& base64) {
     return rv;
 }
 
+namespace {
+
+// An ABI is downloaded from a chain, so its names are attacker-controlled
+// strings that end up inside a string literal (DK_STRUCT("<name>")) and as
+// bare identifiers in the generated header. A name containing a quote or a
+// newline would inject code into a file the developer then compiles.
+bool isSafeAbiName(std::string_view name) {
+    if (name.empty() || name.size() > 64) {
+        return false;
+    }
+    return std::all_of(name.begin(), name.end(), [](unsigned char c) {
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
+               c == '_' || c == '.';
+    });
+}
+
+}  // namespace
+
 Result<std::string> Generator::run() {
+    for (const auto& entry : abi_.structs) {
+        if (!isSafeAbiName(entry.name)) {
+            return err(ErrorKind::Invalid, "Unsafe struct name in ABI: " + entry.name);
+        }
+        for (const auto& field : entry.fields) {
+            if (!isSafeAbiName(field.name)) {
+                return err(ErrorKind::Invalid, "Unsafe field name in ABI: " + field.name);
+            }
+        }
+    }
+    for (const auto& entry : abi_.variants) {
+        if (!isSafeAbiName(entry.name)) {
+            return err(ErrorKind::Invalid, "Unsafe variant name in ABI: " + entry.name);
+        }
+    }
+    for (const auto& entry : abi_.types) {
+        if (!isSafeAbiName(entry.new_type_name)) {
+            return err(ErrorKind::Invalid, "Unsafe type name in ABI: " + entry.new_type_name);
+        }
+    }
     const std::string ns =
         options_.namespaceName.empty() ? sanitizeIdentifier(contractName_)
                                        : options_.namespaceName;

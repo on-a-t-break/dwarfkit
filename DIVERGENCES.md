@@ -233,3 +233,25 @@ error through the normal `Result<T>` channel.
 - `Table::getFieldToIndex` pairs `key_names` with `key_types` only up to the
   shorter of the two. The ABI carries them as independent arrays; upstream reads
   `undefined` past the end, C++ read a `std::string` that was never constructed.
+
+- Transport limits with no upstream equivalent: HTTP response bodies cap at
+  64 MB (Accept-Encoding is on, so a compressed reply can expand well past what
+  was sent), a websocket message caps at 16 MB and the receive deadline is
+  checked on every path rather than only when curl reports CURLE_AGAIN, and
+  nodeos error-format substitution caps its output. Upstream inherits these
+  bounds from the browser and from the ws package.
+- `FileSessionStorage` writes owner-only (0600) on POSIX. Upstream persists to
+  origin-scoped browser localStorage; a session file holding a private key in
+  cleartext must not be world-readable.
+- Key material is wiped where the port owns the buffer: the `PrivateKey`
+  destructor, the signing DRBG state, and the derived shared secret. JS cannot
+  zeroize, so upstream has no equivalent. Copies still wipe only their own
+  buffer, so this reduces exposure rather than removing it.
+- The libsecp256k1 context is randomized after creation (side-channel blinding
+  recommended upstream by libsecp256k1 itself), and R1 key generation resamples
+  a scalar at or above the P-256 order instead of returning a key that fails
+  later at `toPublic()`.
+- dkgen rejects ABI struct, field, variant and type names outside
+  `[A-Za-z0-9_.]`. Names come from a downloaded ABI and are emitted both inside
+  string literals and as bare identifiers, so a quote or newline would inject
+  code into the header the developer compiles.

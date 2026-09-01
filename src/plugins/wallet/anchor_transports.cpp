@@ -124,10 +124,10 @@ Result<WalletPluginLoginResponse> NativeTransport::login(LoginContext& context,
            ResolvedSigningRequest::fromPayload(payload, context.esrOptions()));
 
     WalletPluginLoginResponse response;
-    DK_TRY(chain, Checksum256::from(payload["cid"].get<std::string>()));
+    DK_TRY(chain, Checksum256::from(jsonStr(payload, "cid")));
     response.chain = chain;
-    response.permissionLevel = PermissionLevel{Name::from(payload["sa"].get<std::string>()),
-                                               Name::from(payload["sp"].get<std::string>())};
+    response.permissionLevel = PermissionLevel{Name::from(jsonStr(payload, "sa")),
+                                               Name::from(jsonStr(payload, "sp"))};
     if (payload.contains("sig") && payload["sig"].is_string()) {
         DK_TRY(signature, Signature::from(payload["sig"].get<std::string>()));
         DK_TRY(proof, resolvedResponse.getIdentityProof(signature));

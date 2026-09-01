@@ -8,6 +8,12 @@
 namespace dwarfkit {
 
 namespace {
+// a buoy or actionstream server can stream continuation fragments forever;
+// cap what one message may accumulate
+constexpr size_t maxMessageBytes = 16u * 1024 * 1024;
+}  // namespace
+
+namespace {
 
 void globalInit() {
     static std::once_flag once;
@@ -55,6 +61,12 @@ Result<Bytes> CurlWebSocketProvider::receive(std::chrono::milliseconds timeout,
         if (token.cancelled()) {
             return err(ErrorKind::Canceled, "Cancelled");
         }
+        // the deadline has to be checked on every path, not just when curl
+        // reports CURLE_AGAIN: a server that streams continuation fragments or
+        // floods pings otherwise keeps this loop running forever
+        if (clock::now() >= deadline) {
+            return err(ErrorKind::Transport, "Timed out", 0, json{{"code", "E_TIMEOUT"}});
+        }
         size_t received = 0;
         const curl_ws_frame* meta = nullptr;
         const CURLcode status = curl_ws_recv(curl, buffer, sizeof(buffer), &received, &meta);
@@ -80,6 +92,11 @@ Result<Bytes> CurlWebSocketProvider::receive(std::chrono::milliseconds timeout,
             size_t sent = 0;
             (void)curl_ws_send(curl, buffer, received, &sent, 0, CURLWS_PONG);
             continue;
+        }
+        if (message.size() + received > maxMessageBytes) {
+            close();
+            return err(ErrorKind::Transport, "Message too large", 0,
+                       json{{"code", "E_MESSAGE"}});
         }
         message.insert(message.end(), buffer, buffer + received);
         if (!meta || meta->bytesleft == 0) {

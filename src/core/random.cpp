@@ -19,6 +19,22 @@
 
 namespace dwarfkit {
 
+void secureZero(void* data, size_t length) {
+    if (data == nullptr || length == 0) {
+        return;
+    }
+#ifdef _WIN32
+    SecureZeroMemory(data, length);
+#else
+    // volatile write loop: explicit_bzero is not everywhere, and memset on a
+    // dying buffer is a dead store the optimizer may remove
+    volatile unsigned char* p = static_cast<volatile unsigned char*>(data);
+    while (length--) {
+        *p++ = 0;
+    }
+#endif
+}
+
 static bool fillRandom(uint8_t* buf, size_t len) {
 #if defined(_WIN32)
     return BCRYPT_SUCCESS(

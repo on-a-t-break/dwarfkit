@@ -1,6 +1,7 @@
 #include <dwarfkit/contract/utils.hpp>
 
 #include <cctype>
+#include <cmath>
 #include <regex>
 
 namespace dwarfkit {
@@ -64,7 +65,13 @@ json wrapIndexValue(const json& value) {
         return abi_traits<uint64_t>::toJSON(value.get<uint64_t>());
     }
     if (value.is_number_float()) {
-        return abi_traits<uint64_t>::toJSON(static_cast<uint64_t>(value.get<double>()));
+        // casting a non-finite or out-of-range double to an integer type is
+        // undefined; such a value is not a table index in any case
+        const double number = value.get<double>();
+        if (!std::isfinite(number) || number < 0 || number >= 18446744073709551616.0) {
+            return json();
+        }
+        return abi_traits<uint64_t>::toJSON(static_cast<uint64_t>(number));
     }
     // strings pass through: names, hex checksums and pre-wrapped values all
     // serialize to their string forms anyway
@@ -86,6 +93,12 @@ Result<json> wrapScopeValue(const json& value) {
     }
     if (value.is_number_float()) {
         const double number = value.get<double>();
+        if (!std::isfinite(number) || number < 0 || number >= 18446744073709551616.0) {
+            return err(ErrorKind::Invalid,
+                       "Scope " + value.dump() +
+                           " is not an integer a number can hold, use UInt64.from() to pass it "
+                           "instead");
+        }
         if (number != static_cast<double>(static_cast<int64_t>(number))) {
             return err(ErrorKind::Invalid,
                        "Scope " + value.dump() +
@@ -97,6 +110,9 @@ Result<json> wrapScopeValue(const json& value) {
          value.get<int64_t>() < 0) ||
         (value.is_number_float() && value.get<double>() < 0)) {
         return err(ErrorKind::Invalid, "Scope " + value.dump() + " underflows uint64");
+    }
+    if (!value.is_number()) {
+        return err(ErrorKind::Invalid, "Scope " + value.dump() + " is not a number");
     }
     return abi_traits<uint64_t>::toJSON(value.get<uint64_t>());
 }
@@ -112,9 +128,10 @@ Result<ABI> blobStringToAbi(const std::string& blobString) {
 }
 
 std::string formatExceptionMessage(const json& except) {
-    if (except.contains("stack") && except["stack"].is_array() && !except["stack"].empty()) {
+    if (except.is_object() && except.contains("stack") && except["stack"].is_array() &&
+        !except["stack"].empty()) {
         const json& top = except["stack"][0];
-        const std::string format = top.value("format", "");
+        const std::string format = jsonStr(top, "format");
         if (!format.empty()) {
             const json data = top.contains("data") && top["data"].is_object() ? top["data"]
                                                                               : json::object();
@@ -145,7 +162,7 @@ std::string formatExceptionMessage(const json& except) {
             return top["data"]["s"].get<std::string>();
         }
     }
-    return except.value("message", "");
+    return jsonStr(except, "message");
 }
 
 }  // namespace dwarfkit

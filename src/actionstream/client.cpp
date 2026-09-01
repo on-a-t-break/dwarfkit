@@ -114,16 +114,16 @@ Result<std::optional<StreamAction>> ActionStreamClient::handleMessage(const std:
     }
     const std::string type = msg.value("type", "");
     if (type == "heartbeat") {
-        headSeq_ = std::stoull(msg.value("head_seq", "0"));
-        libSeq_ = std::stoull(msg.value("lib_seq", "0"));
+        headSeq_ = jsonUInt64(msg, "head_seq");
+        libSeq_ = jsonUInt64(msg, "lib_seq");
         if (onHeartbeat) {
             onHeartbeat({headSeq_, libSeq_});
         }
         return std::optional<StreamAction>();
     }
     if (type == "catchup_complete") {
-        headSeq_ = std::stoull(msg.value("head_seq", "0"));
-        libSeq_ = std::stoull(msg.value("lib_seq", "0"));
+        headSeq_ = jsonUInt64(msg, "head_seq");
+        libSeq_ = jsonUInt64(msg, "lib_seq");
         catchupComplete_ = true;
         catchupCompleteAt_ = std::chrono::steady_clock::now();
         if (onCatchupComplete) {
@@ -133,7 +133,7 @@ Result<std::optional<StreamAction>> ActionStreamClient::handleMessage(const std:
     }
     if (type == "error") {
         if (onError) {
-            onError(msg.value("code", 0), msg.value("message", ""));
+            onError(static_cast<int>(jsonNum(msg, "code")), jsonStr(msg, "message"));
         }
         return std::optional<StreamAction>();
     }
@@ -165,16 +165,16 @@ Result<std::optional<StreamAction>> ActionStreamClient::handleMessage(const std:
         msg["trx_id"].get_ref<const std::string&>().empty()) {
         if (onError) {
             onError(static_cast<int>(StreamErrorCode::DataInconsistent),
-                    "Action " + msg.value("global_seq", "") + " arrived without a trx_id");
+                    "Action " + jsonStr(msg, "global_seq") + " arrived without a trx_id");
         }
         return std::optional<StreamAction>();
     }
 
     StreamAction action;
-    action.globalSeq = std::stoull(msg.value("global_seq", "0"));
-    action.blockNum = msg.value("block_num", 0u);
-    action.blockTime = msg.value("block_time", int64_t(0));
-    action.contract = Name::from(msg.value("contract", ""));
+    action.globalSeq = jsonUInt64(msg, "global_seq");
+    action.blockNum = static_cast<uint32_t>(jsonUInt64(msg, "block_num"));
+    action.blockTime = static_cast<int64_t>(jsonNum(msg, "block_time"));
+    action.contract = Name::from(jsonStr(msg, "contract"));
     action.action = Name::from(msg.value("action", ""));
     action.receiver = Name::from(msg.value("receiver", ""));
     DK_TRY(trxId, Checksum256::from(msg["trx_id"].get<std::string>()));

@@ -10,9 +10,15 @@ namespace {
 
 // ${key} placeholders in nodeos exception formats
 std::string resolveStackFormat(const json& entry) {
-    const std::string format = entry.value("format", "");
+    // this formats an error body straight off the wire
+    if (!entry.is_object() || !entry.contains("format") || !entry.at("format").is_string()) {
+        return "";
+    }
+    const std::string format = entry.at("format").get<std::string>();
     if (format.empty()) return "";
     if (!entry.contains("data") || !entry.at("data").is_object()) return format;
+    // each substitution appends a server-chosen value, so bound the result
+    constexpr size_t maxFormatted = 64u * 1024;
     const json& data = entry.at("data");
     std::string rv;
     size_t pos = 0;
@@ -34,6 +40,10 @@ std::string resolveStackFormat(const json& entry) {
             rv += value.is_string() ? value.get<std::string>() : value.dump();
         } else {
             rv += format.substr(open, close - open + 1);
+        }
+        if (rv.size() > maxFormatted) {
+            rv.resize(maxFormatted);
+            break;
         }
         pos = close + 1;
     }

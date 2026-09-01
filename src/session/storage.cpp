@@ -15,14 +15,26 @@ std::string FileSessionStorage::storageKey(std::string_view key) const {
 Result<void> FileSessionStorage::write(std::string_view key, std::string_view data) {
     std::error_code ec;
     std::filesystem::create_directories(directory_, ec);
-    std::ofstream file(directory_ / storageKey(key), std::ios::binary | std::ios::trunc);
-    if (!file.good()) {
-        return err(ErrorKind::Storage, "Unable to open storage file for " + std::string(key));
+    const std::filesystem::path path = directory_ / storageKey(key);
+    {
+        std::ofstream file(path, std::ios::binary | std::ios::trunc);
+        if (!file.good()) {
+            return err(ErrorKind::Storage, "Unable to open storage file for " + std::string(key));
+        }
+        file.write(data.data(), static_cast<std::streamsize>(data.size()));
+        if (!file.good()) {
+            return err(ErrorKind::Storage,
+                       "Unable to write storage file for " + std::string(key));
+        }
     }
-    file.write(data.data(), static_cast<std::streamsize>(data.size()));
-    if (!file.good()) {
-        return err(ErrorKind::Storage, "Unable to write storage file for " + std::string(key));
-    }
+#ifndef _WIN32
+    // a session written by WalletPluginPrivateKey holds the private key in
+    // cleartext, so it must not land world-readable
+    std::filesystem::permissions(path,
+                                 std::filesystem::perms::owner_read |
+                                     std::filesystem::perms::owner_write,
+                                 std::filesystem::perm_options::replace, ec);
+#endif
     return {};
 }
 

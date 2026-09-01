@@ -13,9 +13,19 @@ void globalInit() {
     std::call_once(once, [] { curl_global_init(CURL_GLOBAL_DEFAULT); });
 }
 
+// A response body is untrusted and Accept-Encoding is enabled, so a
+// compressed reply can expand far past what was sent. Returning a short count
+// aborts the transfer.
+constexpr size_t maxResponseBytes = 64u * 1024 * 1024;
+
 size_t writeBody(char* data, size_t size, size_t count, void* userdata) {
-    static_cast<std::string*>(userdata)->append(data, size * count);
-    return size * count;
+    auto* body = static_cast<std::string*>(userdata);
+    const size_t bytes = size * count;
+    if (body->size() + bytes > maxResponseBytes) {
+        return 0;
+    }
+    body->append(data, bytes);
+    return bytes;
 }
 
 size_t writeHeader(char* data, size_t size, size_t count, void* userdata) {

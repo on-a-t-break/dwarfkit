@@ -42,8 +42,20 @@ void subBE(std::array<uint8_t, 32>& value, const std::array<uint8_t, 32>& subtra
 }
 
 secp256k1_context* secpContext() {
-    static secp256k1_context* ctx =
-        secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
+    static secp256k1_context* ctx = [] {
+        secp256k1_context* created =
+            secp256k1_context_create(SECP256K1_CONTEXT_SIGN | SECP256K1_CONTEXT_VERIFY);
+        // upstream libsecp256k1 recommends randomizing the context before
+        // signing, to blind the scalar operations against side-channel
+        // measurement. The deterministic nonce already rules out nonce reuse,
+        // so this is defense in depth and a failure here is not fatal.
+        if (created != nullptr) {
+            if (const auto seed = secureRandom(32)) {
+                (void)secp256k1_context_randomize(created, seed->data());
+            }
+        }
+        return created;
+    }();
     return ctx;
 }
 
@@ -51,6 +63,13 @@ secp256k1_context* secpContext() {
 // K1 nonce so signatures match Wharfkit byte for byte.
 class EllipticDRBG {
 public:
+    // k_/v_ derive the signing nonce; a leaked nonce plus its signature
+    // recovers the private key
+    ~EllipticDRBG() {
+        secureZero(k_);
+        secureZero(v_);
+    }
+
     EllipticDRBG(std::span<const uint8_t> entropy, std::span<const uint8_t> nonce,
                  std::span<const uint8_t> pers) {
         k_.fill(0x00);
@@ -106,6 +125,7 @@ int k1NonceFn(unsigned char* nonce32, const unsigned char* msg32, const unsigned
     const std::array<uint8_t, 1> persBytes{pers};
 
     EllipticDRBG drbg(entropy, nonce, persBytes);
+    secureZero(entropy);
 
     // return the (attempt+1)-th k that lands in [2, n-2]
     unsigned int produced = 0;
@@ -313,7 +333,9 @@ Result<std::vector<uint8_t>> sharedSecret(std::span<const uint8_t> secret,
     while (start < 31 && x[start] == 0) {
         ++start;
     }
-    return std::vector<uint8_t>(x.begin() + static_cast<long>(start), x.end());
+    std::vector<uint8_t> rv(x.begin() + static_cast<long>(start), x.end());
+    secureZero(x);
+    return rv;
 }
 
 bool verify(std::span<const uint8_t> signature, std::span<const uint8_t> message,
@@ -349,11 +371,19 @@ Result<std::array<uint8_t, 32>> generate(KeyType type) {
         if (type == KeyType::K1) {
             valid = secp256k1_ec_seckey_verify(secpContext(), key.data()) == 1;
         } else {
-            // 0 < key < nist256p1 order; a random 256-bit value is below the
-            // order with overwhelming probability, so only reject all-zero
-            valid = std::any_of(key.begin(), key.end(), [](uint8_t b) { return b != 0; });
+            // 0 < key < nist256p1 order. About one in 2^32 random values sits
+            // above the order; trezor rejects those later at toPublic(), so
+            // resample here instead of handing back a key that cannot sign.
+            static constexpr std::array<uint8_t, 32> p256Order = {
+                0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xff, 0xff, 0xff, 0xbc, 0xe6, 0xfa, 0xad, 0xa7, 0x17,
+                0x9e, 0x84, 0xf3, 0xb9, 0xca, 0xc2, 0xfc, 0x63, 0x25, 0x51};
+            const bool nonZero =
+                std::any_of(key.begin(), key.end(), [](uint8_t b) { return b != 0; });
+            valid = nonZero && compareBE(key, p256Order) < 0;
         }
         if (valid) return key;
+        secureZero(key);
     }
     return err(ErrorKind::Internal, "Failed to generate valid private key");
 }
