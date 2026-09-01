@@ -256,6 +256,21 @@ error through the normal `Result<T>` channel.
   string literals and as bare identifiers, so a quote or newline would inject
   code into the header the developer compiles.
 
+## Residual numeric and input guards
+
+- `jsRound` and the resources kit route every double->int64 conversion through
+  a saturating cast. Casting a non-finite or out-of-range double to an integer
+  is undefined in C++ (JS just produces NaN or a clamped value); a real
+  timestamp or resource amount is never near the int64 bounds, so valid inputs
+  are unchanged. This covers the time conversions and the PowerUp/RAM
+  estimation math, including the chain-state-driven adjusted-utilization delta.
+- The Anchor and TackleBox transports store only correctly typed `launchUrl`
+  (string) and `sameDevice` (bool) from the wallet's `link_meta`, and open a
+  `launchUrl` only if its scheme is `esr:`/`http:`/`https:` (the schemes the
+  embedder's open-a-url hook is documented to expect). Both fields are
+  wallet-supplied; without the type guard a non-string/non-bool value threw out
+  of the exception-free API on the later read.
+
 ## Supply chain and residual hardening
 
 - The fetched dependencies (libsecp256k1, libcurl) are pinned by commit rather

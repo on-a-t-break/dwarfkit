@@ -5,7 +5,7 @@ namespace dwarfkit {
 Result<Asset> RAMState::price_per(double bytes) const {
     const int64_t baseUnits = base.balance.units;
     const int64_t quoteUnits = quote.balance.units;
-    DK_TRY(units, get_input(baseUnits, quoteUnits, static_cast<int64_t>(bytes)));
+    DK_TRY(units, get_input(baseUnits, quoteUnits, resources_detail::saturateInt64(bytes)));
     return Asset::fromUnits(units, quote.balance.symbol);
 }
 

@@ -115,10 +115,10 @@ Result<WalletPluginLoginResponse> NativeTransport::login(LoginContext& context,
             const json metadata =
                 json::parse(payload["link_meta"].get_ref<const std::string&>(), nullptr, false);
             if (metadata.is_object()) {
-                if (metadata.contains("sameDevice")) {
+                if (metadata.contains("sameDevice") && metadata["sameDevice"].is_boolean()) {
                     data["sameDevice"] = metadata["sameDevice"];
                 }
-                if (metadata.contains("launchUrl")) {
+                if (metadata.contains("launchUrl") && metadata["launchUrl"].is_string()) {
                     data["launchUrl"] = metadata["launchUrl"];
                 }
                 if (metadata.contains("triggerUrl")) {
@@ -169,7 +169,8 @@ Result<WalletPluginSignResponse> NativeTransport::sign(const ResolvedSigningRequ
     const std::string request = modifiedRequest.encode(true, false);
 
     // Mobile will return true or false, desktop will return undefined
-    const bool sameDevice = data.value("sameDevice", false);
+    const bool sameDevice =
+        data.contains("sameDevice") && data["sameDevice"].is_boolean() && data["sameDevice"];
 
     SigningRequest sameDeviceRequest = modifiedRequest;
     sameDeviceRequest.setInfoKey("same_device", true);
@@ -180,8 +181,12 @@ Result<WalletPluginSignResponse> NativeTransport::sign(const ResolvedSigningRequ
     if (sameDevice && options_.openLink) {
         // upstream also deep-links anchor://link on Apple handhelds; there is
         // no user agent to sniff here
-        const std::string launchUrl = data.value("launchUrl", "");
-        if (!launchUrl.empty()) {
+        const std::string launchUrl = jsonStr(data, "launchUrl");
+        // launchUrl comes from the wallet's callback and is handed to the
+        // embedder's open-a-url hook; keep it to the schemes that hook expects
+        if (!launchUrl.empty() &&
+            (launchUrl.starts_with("esr:") || launchUrl.starts_with("http://") ||
+             launchUrl.starts_with("https://"))) {
             options_.openLink(launchUrl);
         }
     }

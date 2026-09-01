@@ -7,6 +7,7 @@
 
 #include <dwarfkit/antelope.hpp>
 #include <dwarfkit/core/zlib.hpp>
+#include <dwarfkit/resources.hpp>
 
 using namespace dwarfkit;
 
@@ -160,6 +161,20 @@ TEST_SUITE("hardening") {
     TEST_CASE("time conversion handles the int64 boundary") {
         CHECK(TimePoint(std::numeric_limits<int64_t>::max()).toMilliseconds() > 0);
         CHECK(TimePoint(std::numeric_limits<int64_t>::min()).toMilliseconds() < 0);
+    }
+
+    TEST_CASE("non-finite and out-of-range doubles do not cast to int64 as UB") {
+        // the double->int64 chokepoint for every time conversion
+        (void)TimePoint::fromMilliseconds(1e300);
+        (void)TimePoint::fromMilliseconds(-1e300);
+        (void)TimePoint::fromMilliseconds(std::nan(""));
+        // the saturating helper the resources kit routes its double casts through
+        using resources_detail::saturateInt64;
+        CHECK(saturateInt64(std::nan("")) == 0);
+        CHECK(saturateInt64(1e300) == std::numeric_limits<int64_t>::max());
+        CHECK(saturateInt64(-1e300) == std::numeric_limits<int64_t>::min());
+        CHECK(saturateInt64(42.0) == 42);
+        CHECK(saturateInt64(-7.9) == -7);
     }
 
     TEST_CASE("p2p framing drops an oversized frame instead of buffering it") {

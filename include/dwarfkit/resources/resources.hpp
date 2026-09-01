@@ -3,6 +3,8 @@
 // DIVERGENCES.md); v1 becomes an accessor returning the API view.
 #pragma once
 
+#include <cmath>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -33,6 +35,22 @@ Result<Int128> decimalDivideScaled(const Int128& a, const Int128& b, int precisi
 // bigDecimal(String(numerator)).divide(den, precision): a double numerator
 // goes through its shortest decimal representation first
 double decimalDivideDouble(double numerator, const Int128& den, int precision);
+
+// Saturating double->int64. Casting a non-finite or out-of-range double to an
+// integer is undefined; a resource amount is never near the int64 bounds, so
+// clamping only changes behavior for values that were already invalid.
+inline int64_t saturateInt64(double v) {
+    if (std::isnan(v)) {
+        return 0;
+    }
+    if (v >= 9223372036854775808.0) {
+        return std::numeric_limits<int64_t>::max();
+    }
+    if (v < -9223372036854775808.0) {
+        return std::numeric_limits<int64_t>::min();
+    }
+    return static_cast<int64_t>(v);
+}
 
 }  // namespace resources_detail
 

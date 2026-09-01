@@ -87,8 +87,10 @@ int64_t PowerUpStateResource::determine_adjusted_utilization(
         double delta = diff * std::exp(-(nowSeconds - utilizationTs) /
                                        static_cast<double>(decay_secs));
         delta = std::min(std::max(delta, 0.0), diff);
-        // Int64.adding(Int.from(delta)) truncates the double through BN
-        adjusted = utilization + static_cast<int64_t>(delta);
+        // Int64.adding(Int.from(delta)) truncates the double through BN.
+        // delta is clamped to [0, diff] above, but diff can round to 2^63 for
+        // extreme chain state, and casting that to int64 is undefined.
+        adjusted = utilization + resources_detail::saturateInt64(delta);
     }
     return adjusted;
 }
@@ -173,7 +175,7 @@ Result<int64_t> PowerUpStateResourceCPU::frac_by_us(const SampleUsage& usage, in
 
 Result<double> PowerUpStateResourceCPU::price_per_us(const SampleUsage& usage, double us,
                                                      const PowerUpStateOptions& options) const {
-    return pricePer(*this, usage.cpu, weight, static_cast<int64_t>(us), options,
+    return pricePer(*this, usage.cpu, weight, resources_detail::saturateInt64(us), options,
                     {"CPU amount", "us"});
 }
 
@@ -198,7 +200,7 @@ Result<double> PowerUpStateResourceNET::price_per_byte(const SampleUsage& usage,
                                                        const PowerUpStateOptions& options) const {
     // unlike the CPU variant, upstream NET pricing has no minimum precision
     // or min_payment checks
-    DK_TRY(fracValue, frac_by_bytes(usage, static_cast<int64_t>(bytes)));
+    DK_TRY(fracValue, frac_by_bytes(usage, resources_detail::saturateInt64(bytes)));
     DK_TRY(increase, utilization_increase(UInt128(static_cast<uint64_t>(fracValue))));
     const int64_t adjusted = determine_adjusted_utilization(options);
     const double feeValue = fee(increase, adjusted);

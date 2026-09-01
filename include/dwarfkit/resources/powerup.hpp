@@ -85,10 +85,10 @@ struct PowerUpStateResourceCPU : PowerUpStateResource {
     Result<int64_t> us_to_weight(const UInt128& sample, int64_t us) const;
 
     Result<int64_t> frac(const SampleUsage& usage, double us) const {
-        return frac_by_us(usage, static_cast<int64_t>(us));
+        return frac_by_us(usage, resources_detail::saturateInt64(us));
     }
     Result<int64_t> frac_by_ms(const SampleUsage& usage, double ms) const {
-        return frac_by_us(usage, static_cast<int64_t>(ms * 1000));
+        return frac_by_us(usage, resources_detail::saturateInt64(ms * 1000));
     }
     Result<int64_t> frac_by_us(const SampleUsage& usage, int64_t us) const;
 
@@ -122,10 +122,10 @@ struct PowerUpStateResourceNET : PowerUpStateResource {
     Result<int64_t> bytes_to_weight(const UInt128& sample, int64_t bytes) const;
 
     Result<int64_t> frac(const SampleUsage& usage, double bytes) const {
-        return frac_by_bytes(usage, static_cast<int64_t>(bytes));
+        return frac_by_bytes(usage, resources_detail::saturateInt64(bytes));
     }
     Result<int64_t> frac_by_kb(const SampleUsage& usage, double kilobytes) const {
-        return frac_by_bytes(usage, static_cast<int64_t>(kilobytes * 1000));
+        return frac_by_bytes(usage, resources_detail::saturateInt64(kilobytes * 1000));
     }
     Result<int64_t> frac_by_bytes(const SampleUsage& usage, int64_t bytes) const;
 

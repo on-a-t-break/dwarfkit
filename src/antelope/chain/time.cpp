@@ -2,13 +2,28 @@
 
 #include <cmath>
 #include <cstdio>
+#include <limits>
 
 namespace dwarfkit {
 
 namespace {
 
 // Math.round: floor(x + 0.5), ties toward positive infinity
-int64_t jsRound(double x) { return static_cast<int64_t>(std::floor(x + 0.5)); }
+int64_t jsRound(double x) {
+    const double r = std::floor(x + 0.5);
+    // a non-finite or out-of-range double cast to int64 is undefined; a real
+    // timestamp is nowhere near these bounds
+    if (std::isnan(r)) {
+        return 0;
+    }
+    if (r >= 9223372036854775808.0) {
+        return std::numeric_limits<int64_t>::max();
+    }
+    if (r < -9223372036854775808.0) {
+        return std::numeric_limits<int64_t>::min();
+    }
+    return static_cast<int64_t>(r);
+}
 
 // Howard Hinnant's days_from_civil / civil_from_days
 constexpr int64_t daysFromCivil(int64_t y, int64_t m, int64_t d) {
