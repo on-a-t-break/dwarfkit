@@ -39,15 +39,15 @@ std::function<void(const std::string&)>& logWarnSink() {
 
 void logWarn(const std::string& message) { logWarnSink()("[anchor-link] " + message); }
 
-std::string uuid() {
+Result<std::string> uuid() {
     // same layout as upstream: version nibble 4, variant nibble 8..b, but
     // fed from the CSPRNG instead of Math.random
     static constexpr char chars[] = "0123456789abcdef";
-    const auto random = secureRandom(36);
+    DK_TRY(random, secureRandom(36));
     std::string rv;
     rv.reserve(36);
     for (int i = 0; i < 36; i++) {
-        const uint8_t byte = random ? (*random)[static_cast<size_t>(i)] : uint8_t(0);
+        const uint8_t byte = random[static_cast<size_t>(i)];
         switch (i) {
             case 8:
             case 13:

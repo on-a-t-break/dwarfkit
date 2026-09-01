@@ -25,6 +25,11 @@ struct P2PClientOptions {
 class P2PClient {
 public:
     explicit P2PClient(const P2PClientOptions& options);
+    ~P2PClient();
+
+    // holds raw handler registrations on the provider, so it cannot be copied
+    P2PClient(const P2PClient&) = delete;
+    P2PClient& operator=(const P2PClient&) = delete;
 
     P2PProvider* provider = nullptr;
 
@@ -51,6 +56,7 @@ private:
     void handleData(std::span<const uint8_t> data);
     void emitError(const Error& error);
     void resetHeartbeat();
+    void endHeartbeat();
     void handleHeartbeat();
 
     std::optional<int> heartbeatTimoutMs_;

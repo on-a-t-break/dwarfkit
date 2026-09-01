@@ -7,6 +7,8 @@
 #include <optional>
 #include <string>
 
+#include <dwarfkit/core/result.hpp>
+
 namespace dwarfkit {
 
 // PascalCase version of a snake_case string.
@@ -23,7 +25,10 @@ std::function<void(const std::string&)>& logWarnSink();
 void logWarn(const std::string& message);
 
 // Generate a UUID (v4 layout, CSPRNG-backed).
-std::string uuid();
+// Errors rather than returning a predictable value if the OS CSPRNG fails:
+// this is used as the buoy callback channel, and a guessable channel lets
+// anyone subscribe to the signature.
+Result<std::string> uuid();
 
 // A return url that Anchor would redirect back to; native builds have no
 // browser location, so this is always nullopt.

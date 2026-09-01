@@ -1,3 +1,4 @@
+#include <dwarfkit/antelope/utils.hpp>
 #include <dwarfkit/plugins/wallet/anchor/transports.hpp>
 
 #include <random>
@@ -155,7 +156,7 @@ Result<WalletPluginSignResponse> NativeTransport::sign(const ResolvedSigningRequ
 
     DK_CHECK(modifiedRequest.setInfoKey("link", LinkInfo{expiration}));
 
-    const auto callback = setTransactionCallback(modifiedRequest, options_.buoyUrl);
+    DK_TRY(callback, setTransactionCallback(modifiedRequest, options_.buoyUrl));
 
     const std::string request = modifiedRequest.encode(true, false);
 
@@ -355,11 +356,17 @@ Result<WalletPluginSignResponse> WebTransport::sign(const ResolvedSigningRequest
            context.createRequest({.transaction = Serializer::objectify(resolved.transaction)}));
     DK_CHECK(modifiedRequest.setInfoKey("link", LinkInfo{resolved.transaction.expiration}));
 
-    const auto callback = setTransactionCallback(modifiedRequest, options_.buoyUrl);
+    DK_TRY(callback, setTransactionCallback(modifiedRequest, options_.buoyUrl));
 
-    std::random_device rd;
-    std::uniform_int_distribution<uint64_t> dist(0, (uint64_t(1) << 53) - 1);
-    const uint64_t nonce = dist(rd);
+    // std::random_device is not required to be a CSPRNG (some implementations
+    // return a deterministic sequence), and this nonce authenticates the
+    // session request
+    DK_TRY(nonceBytes, secureRandom(8));
+    uint64_t nonce = 0;
+    for (size_t i = 0; i < 8; i++) {
+        nonce = (nonce << 8) | nonceBytes[i];
+    }
+    nonce &= (uint64_t(1) << 53) - 1;
 
     DK_TRY(encryptionKey, PrivateKey::from(data.value("encryptionKey", "")));
     DK_TRY(messageKey, PublicKey::from(data.value("messageKey", "")));

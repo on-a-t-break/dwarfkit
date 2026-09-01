@@ -84,7 +84,7 @@ TEST_SUITE("pesr-anchor") {
         auto resolved =
             ResolvedSigningRequest::fromPayload(mockCallbackPayload(), {.zlib = true}).value();
         const std::string buoyUrl = "https://example.com/buoy";
-        const auto callback = setTransactionCallback(resolved.request, buoyUrl);
+        const auto callback = setTransactionCallback(resolved.request, buoyUrl).value();
         const auto resolvedCallback =
             resolved.getCallback({Signature::from(mockSignature1).value()}).value();
         CHECK(callback.service == "https://example.com/buoy");

@@ -49,7 +49,10 @@ double scaledToDouble(const Int128& scaled, int precision) {
     const UInt128 intPart = value.dividing(den).value_or(UInt128());
     const UInt128 fracPart = value.remainder(den).value_or(UInt128());
     std::string frac = fracPart.toString();
-    frac.insert(frac.begin(), static_cast<size_t>(precision) - frac.size(), '0');
+    // a precision-0 symbol makes the pad count wrap to SIZE_MAX
+    if (precision > 0 && frac.size() < static_cast<size_t>(precision)) {
+        frac.insert(frac.begin(), static_cast<size_t>(precision) - frac.size(), '0');
+    }
     const std::string text = intPart.toString() + "." + frac;
     return std::strtod(text.c_str(), nullptr);
 }

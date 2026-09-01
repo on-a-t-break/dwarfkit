@@ -30,6 +30,33 @@ namespace dwarfkit {
 
 namespace detail {
 
+// json accessors that return an error instead of throwing. Every one of these
+// is reachable from untrusted input (chain responses, ESR payloads, p2p
+// frames) and the public API is exception-free.
+inline Result<std::string> jsonString(const json& j) {
+    if (!j.is_string()) {
+        return err(ErrorKind::Invalid,
+                   "Expected string, got " + std::string(j.type_name()));
+    }
+    return j.get<std::string>();
+}
+
+template <class T>
+Result<T> jsonToFloat(const json& j) {
+    if (j.is_string()) {
+        try {
+            return static_cast<T>(std::stod(j.get<std::string>()));
+        } catch (...) {
+            return err(ErrorKind::Invalid, "Invalid number");
+        }
+    }
+    if (!j.is_number()) {
+        return err(ErrorKind::Invalid,
+                   "Expected number, got " + std::string(j.type_name()));
+    }
+    return j.get<T>();
+}
+
 template <class T>
 Result<T> jsonToInt(const json& j) {
     if (j.is_string()) {
@@ -148,10 +175,7 @@ struct abi_traits<float> {
     }
     static Result<float> fromABI(ABIDecoder& d) { return d.readFloat32(); }
     static json toJSON(float v) { return detail::toFixed7(static_cast<double>(v)); }
-    static Result<float> fromJSON(const json& j) {
-        if (j.is_string()) return std::stof(j.get<std::string>());
-        return j.get<float>();
-    }
+    static Result<float> fromJSON(const json& j) { return detail::jsonToFloat<float>(j); }
     static float abiDefault() { return 0; }
 };
 
@@ -164,10 +188,7 @@ struct abi_traits<double> {
     }
     static Result<double> fromABI(ABIDecoder& d) { return d.readFloat64(); }
     static json toJSON(double v) { return detail::jsNumberToString(v); }
-    static Result<double> fromJSON(const json& j) {
-        if (j.is_string()) return std::stod(j.get<std::string>());
-        return j.get<double>();
-    }
+    static Result<double> fromJSON(const json& j) { return detail::jsonToFloat<double>(j); }
     static double abiDefault() { return 0; }
 };
 
@@ -203,7 +224,8 @@ struct abi_traits<UInt128> {
     static json toJSON(const UInt128& v) { return v.toJSON(); }
     static Result<UInt128> fromJSON(const json& j) {
         if (j.is_number()) return UInt128::from(static_cast<uint64_t>(j.get<uint64_t>()));
-        return UInt128::from(j.get<std::string>());
+        DK_TRY(text, detail::jsonString(j));
+        return UInt128::from(text);
     }
     static UInt128 abiDefault() { return {}; }
 };
@@ -222,7 +244,8 @@ struct abi_traits<Int128> {
     static json toJSON(const Int128& v) { return v.toJSON(); }
     static Result<Int128> fromJSON(const json& j) {
         if (j.is_number()) return Int128::from(static_cast<int64_t>(j.get<int64_t>()));
-        return Int128::from(j.get<std::string>());
+        DK_TRY(text, detail::jsonString(j));
+        return Int128::from(text);
     }
     static Int128 abiDefault() { return {}; }
 };
@@ -279,7 +302,10 @@ struct abi_traits<Name> {
         return Name(v);
     }
     static json toJSON(const Name& v) { return v.toJSON(); }
-    static Result<Name> fromJSON(const json& j) { return Name::from(j.get<std::string>()); }
+    static Result<Name> fromJSON(const json& j) {
+        DK_TRY(text, detail::jsonString(j));
+        return Name::from(text);
+    }
     static Name abiDefault() { return {}; }
 };
 
@@ -296,7 +322,8 @@ struct abi_traits<Asset::Symbol> {
     }
     static json toJSON(const Asset::Symbol& v) { return v.toJSON(); }
     static Result<Asset::Symbol> fromJSON(const json& j) {
-        return Asset::Symbol::from(j.get<std::string>());
+        DK_TRY(text, detail::jsonString(j));
+        return Asset::Symbol::from(text);
     }
     static Asset::Symbol abiDefault() { return Asset::Symbol::abiDefault(); }
 };
@@ -314,7 +341,8 @@ struct abi_traits<Asset::SymbolCode> {
     }
     static json toJSON(const Asset::SymbolCode& v) { return v.toJSON(); }
     static Result<Asset::SymbolCode> fromJSON(const json& j) {
-        return Asset::SymbolCode::from(j.get<std::string>());
+        DK_TRY(text, detail::jsonString(j));
+        return Asset::SymbolCode::from(text);
     }
     static Asset::SymbolCode abiDefault() { return Asset::SymbolCode::abiDefault(); }
 };
@@ -334,7 +362,10 @@ struct abi_traits<Asset> {
         return Asset(units, symbol);
     }
     static json toJSON(const Asset& v) { return v.toJSON(); }
-    static Result<Asset> fromJSON(const json& j) { return Asset::from(j.get<std::string>()); }
+    static Result<Asset> fromJSON(const json& j) {
+        DK_TRY(text, detail::jsonString(j));
+        return Asset::from(text);
+    }
     static Asset abiDefault() { return Asset::abiDefault(); }
 };
 
@@ -353,7 +384,11 @@ struct abi_traits<ExtendedAsset> {
     }
     static json toJSON(const ExtendedAsset& v) { return v.toJSON(); }
     static Result<ExtendedAsset> fromJSON(const json& j) {
-        DK_TRY(quantity, Asset::from(j.at("quantity").get<std::string>()));
+        if (!j.is_object() || !j.contains("quantity") || !j.contains("contract")) {
+            return err(ErrorKind::Invalid, "Expected extended_asset object");
+        }
+        DK_TRY(quantityText, detail::jsonString(j.at("quantity")));
+        DK_TRY(quantity, Asset::from(quantityText));
         DK_TRY(contract, abi_traits<Name>::fromJSON(j.at("contract")));
         return ExtendedAsset(quantity, contract);
     }
@@ -374,7 +409,10 @@ struct abi_traits<Bytes> {
         return Bytes(data);
     }
     static json toJSON(const Bytes& v) { return v.toJSON(); }
-    static Result<Bytes> fromJSON(const json& j) { return Bytes::from(j.get<std::string>()); }
+    static Result<Bytes> fromJSON(const json& j) {
+        DK_TRY(text, detail::jsonString(j));
+        return Bytes::from(text);
+    }
     static Bytes abiDefault() { return {}; }
 };
 
@@ -392,7 +430,10 @@ struct checksum_traits_impl {
         return Derived::from(data);
     }
     static json toJSON(const Derived& v) { return v.toJSON(); }
-    static Result<Derived> fromJSON(const json& j) { return Derived::from(j.get<std::string>()); }
+    static Result<Derived> fromJSON(const json& j) {
+        DK_TRY(text, detail::jsonString(j));
+        return Derived::from(text);
+    }
     static Derived abiDefault() { return Derived::abiDefault(); }
 };
 
@@ -422,7 +463,10 @@ struct abi_traits<Blob> {
         return err(ErrorKind::Unsupported, "blob has no binary decoding");
     }
     static json toJSON(const Blob& v) { return v.toJSON(); }
-    static Result<Blob> fromJSON(const json& j) { return Blob::from(j.get<std::string>()); }
+    static Result<Blob> fromJSON(const json& j) {
+        DK_TRY(text, detail::jsonString(j));
+        return Blob::from(text);
+    }
     static Blob abiDefault() { return {}; }
 };
 
@@ -438,7 +482,10 @@ struct abi_traits<BlockId> {
         return BlockId::from(data);
     }
     static json toJSON(const BlockId& v) { return v.toJSON(); }
-    static Result<BlockId> fromJSON(const json& j) { return BlockId::from(j.get<std::string>()); }
+    static Result<BlockId> fromJSON(const json& j) {
+        DK_TRY(text, detail::jsonString(j));
+        return BlockId::from(text);
+    }
     static BlockId abiDefault() { return {}; }
 };
 
@@ -454,7 +501,10 @@ struct abi_traits<Float128> {
         return Float128::from(Bytes(data));
     }
     static json toJSON(const Float128& v) { return v.toJSON(); }
-    static Result<Float128> fromJSON(const json& j) { return Float128::from(j.get<std::string>()); }
+    static Result<Float128> fromJSON(const json& j) {
+        DK_TRY(text, detail::jsonString(j));
+        return Float128::from(text);
+    }
     static Float128 abiDefault() { return {}; }
 };
 
@@ -472,7 +522,8 @@ struct abi_traits<TimePoint> {
     static json toJSON(const TimePoint& v) { return v.toJSON(); }
     static Result<TimePoint> fromJSON(const json& j) {
         if (j.is_number()) return TimePoint(j.get<int64_t>());
-        return TimePoint::from(j.get<std::string>());
+        DK_TRY(text, detail::jsonString(j));
+        return TimePoint::from(text);
     }
     static TimePoint abiDefault() { return {}; }
 };
@@ -491,7 +542,8 @@ struct abi_traits<TimePointSec> {
     static json toJSON(const TimePointSec& v) { return v.toJSON(); }
     static Result<TimePointSec> fromJSON(const json& j) {
         if (j.is_number()) return TimePointSec(j.get<uint32_t>());
-        return TimePointSec::from(j.get<std::string>());
+        DK_TRY(text, detail::jsonString(j));
+        return TimePointSec::from(text);
     }
     static TimePointSec abiDefault() { return {}; }
 };
@@ -510,7 +562,8 @@ struct abi_traits<BlockTimestamp> {
     static json toJSON(const BlockTimestamp& v) { return v.toJSON(); }
     static Result<BlockTimestamp> fromJSON(const json& j) {
         if (j.is_number()) return BlockTimestamp(j.get<uint32_t>());
-        return BlockTimestamp::from(j.get<std::string>());
+        DK_TRY(text, detail::jsonString(j));
+        return BlockTimestamp::from(text);
     }
     static BlockTimestamp abiDefault() { return {}; }
 };
@@ -542,7 +595,10 @@ struct abi_traits<PublicKey> {
         return PublicKey(type, Bytes(data));
     }
     static json toJSON(const PublicKey& v) { return v.toJSON(); }
-    static Result<PublicKey> fromJSON(const json& j) { return PublicKey::from(j.get<std::string>()); }
+    static Result<PublicKey> fromJSON(const json& j) {
+        DK_TRY(text, detail::jsonString(j));
+        return PublicKey::from(text);
+    }
     static PublicKey abiDefault() {
         return PublicKey(KeyType::K1, Bytes(std::vector<uint8_t>(33, 0)));
     }
@@ -576,7 +632,10 @@ struct abi_traits<Signature> {
         return Signature(type, Bytes(data));
     }
     static json toJSON(const Signature& v) { return v.toJSON(); }
-    static Result<Signature> fromJSON(const json& j) { return Signature::from(j.get<std::string>()); }
+    static Result<Signature> fromJSON(const json& j) {
+        DK_TRY(text, detail::jsonString(j));
+        return Signature::from(text);
+    }
     static Signature abiDefault() {
         return Signature(KeyType::K1, Bytes(std::vector<uint8_t>(65, 0)));
     }
@@ -596,9 +655,17 @@ struct abi_traits<std::vector<T>> {
     static Result<std::vector<T>> fromABI(ABIDecoder& d) {
         DK_TRY(len, d.readVaruint32());
         std::vector<T> rv;
-        rv.reserve(len);
+        // never pre-size from the wire: the length prefix is untrusted and an
+        // element cannot come from fewer than the bytes that remain
+        rv.reserve(std::min<size_t>(len, d.remaining()));
         for (uint32_t i = 0; i < len; i++) {
+            const size_t before = d.getPosition();
             DK_TRY(item, abi_traits<T>::fromABI(d));
+            if (d.getPosition() == before && rv.size() >= d.remaining() + 1) {
+                // zero-width element type: bound the count by the input size
+                // so a 5-byte payload cannot claim 4 billion elements
+                return err(ErrorKind::Invalid, "Array length exceeds remaining data");
+            }
             rv.push_back(std::move(item));
         }
         return rv;
@@ -878,7 +945,9 @@ struct abi_traits<Variant<AbiName, Ts...>> {
             v.value);
     }
     static Result<V> fromABI(ABIDecoder& d) {
-        DK_TRY(idx, d.readByte());
+        // the encoder writes the discriminant as a varuint32; reading a single
+        // byte here desyncs for variants with more than 127 alternatives
+        DK_TRY(idx, d.readVaruint32());
         return detail::variantFromABIImpl<V, Ts...>(idx, d, std::index_sequence_for<Ts...>{});
     }
     static json toJSON(const V& v) { return v.toJSON(); }

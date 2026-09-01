@@ -28,7 +28,13 @@ void SimpleEnvelopeP2PProvider::handleData(std::span<const uint8_t> data) {
         uint32_t messageLength = 0;
         std::memcpy(&messageLength, remainingData_.data(), 4);
         if (messageLength > maxReadLength) {
+            // drop the buffer and stop: without this the oversized frame is
+            // still delivered once it arrives, and a length that never
+            // arrives leaves the bad header at the front of an
+            // ever-growing buffer, re-erroring on every packet
             emitError(Error{ErrorKind::Invalid, "Incoming Message too long", 0, {}});
+            remainingData_.clear();
+            return;
         }
         if (remainingData_.size() < 4 + static_cast<size_t>(messageLength)) {
             // need more data
@@ -63,13 +69,16 @@ void SimpleEnvelopeP2PProvider::onClose(P2PHandler handler) {
 }
 
 void SimpleEnvelopeP2PProvider::emitData(std::span<const uint8_t> message) {
-    for (const auto& handler : dataHandlers_) {
+    // copy first: a handler may register another or tear the provider down
+    const auto handlers = dataHandlers_;
+    for (const auto& handler : handlers) {
         handler(message);
     }
 }
 
 void SimpleEnvelopeP2PProvider::emitError(const Error& error) {
-    for (const auto& handler : errorHandlers_) {
+    const auto handlers = errorHandlers_;
+    for (const auto& handler : handlers) {
         handler(error);
     }
 }
@@ -107,13 +116,25 @@ Result<void> P2PClient::send(const NetMessage& message, P2PHandler done) {
     return {};
 }
 
+void P2PClient::endHeartbeat() {
+    // the pending timer holds `this`; leaving it armed past teardown fires the
+    // callback on a destroyed client
+    heartbeatTimoutMs_.reset();
+}
+
+P2PClient::~P2PClient() {
+    endHeartbeat();
+}
+
 void P2PClient::end(P2PHandler cb) {
+    endHeartbeat();
     if (provider) {
         provider->end(std::move(cb));
     }
 }
 
 void P2PClient::destroy(const std::optional<Error>& error) {
+    endHeartbeat();
     if (provider) {
         provider->destroy(error);
     }

@@ -1,3 +1,4 @@
+#include <charconv>
 #include <dwarfkit/signing_request/signing_request.hpp>
 
 #include <algorithm>
@@ -844,11 +845,26 @@ Result<ResolvedSigningRequest> ResolvedSigningRequest::fromPayload(
     DK_TRY(request, SigningRequest::from(payload.value("req", ""), options));
     DK_TRY(abis, request.fetchAbis());
     TransactionContext ctx;
-    if (payload.contains("rbn")) {
-        ctx.ref_block_num = static_cast<uint16_t>(std::stoul(payload.value("rbn", "0")));
+    // rbn/rid arrive in a callback payload from a remote wallet: they may be
+    // absent, non-numeric, oversized, or not even strings
+    const auto payloadUInt = [&](const char* key) -> std::optional<uint64_t> {
+        if (!payload.contains(key) || !payload.at(key).is_string()) {
+            return std::nullopt;
+        }
+        const std::string text = payload.at(key).get<std::string>();
+        uint64_t parsed = 0;
+        const auto [ptr, ec] =
+            std::from_chars(text.data(), text.data() + text.size(), parsed);
+        if (ec != std::errc{} || ptr != text.data() + text.size()) {
+            return std::nullopt;
+        }
+        return parsed;
+    };
+    if (const auto rbn = payloadUInt("rbn")) {
+        ctx.ref_block_num = static_cast<uint16_t>(*rbn);
     }
-    if (payload.contains("rid")) {
-        ctx.ref_block_prefix = static_cast<uint32_t>(std::stoul(payload.value("rid", "0")));
+    if (const auto rid = payloadUInt("rid")) {
+        ctx.ref_block_prefix = static_cast<uint32_t>(*rid);
     }
     if (payload.contains("ex")) {
         DK_TRY(expiration, TimePointSec::from(std::string_view(payload.value("ex", ""))));

@@ -36,6 +36,11 @@ public:
 
     explicit SimpleEnvelopeP2PProvider(P2PProvider* nextProvider);
 
+    // registers handlers holding `this` on the next provider, so it cannot be
+    // copied or moved
+    SimpleEnvelopeP2PProvider(const SimpleEnvelopeP2PProvider&) = delete;
+    SimpleEnvelopeP2PProvider& operator=(const SimpleEnvelopeP2PProvider&) = delete;
+
     void write(std::span<const uint8_t> data, P2PHandler done = {}) override;
     void end(P2PHandler cb = {}) override;
     void destroy(const std::optional<Error>& error = {}) override;

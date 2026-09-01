@@ -1,3 +1,4 @@
+#include <charconv>
 #include <dwarfkit/antelope/chain/abi.hpp>
 
 #include <map>
@@ -33,7 +34,7 @@ Result<ABI> ABI::from(const json& value) {
     for (const auto& v : value.value("variants", json::array())) {
         Variant variant{getString(v, "name"), {}};
         for (const auto& type : v.value("types", json::array())) {
-            variant.types.push_back(type.get<std::string>());
+            if (type.is_string()) variant.types.push_back(type.get<std::string>());
         }
         abi.variants.push_back(std::move(variant));
     }
@@ -52,10 +53,10 @@ Result<ABI> ABI::from(const json& value) {
         Table table{Name::from(getString(t, "name")), getString(t, "index_type"), {}, {},
                     getString(t, "type")};
         for (const auto& k : t.value("key_names", json::array())) {
-            table.key_names.push_back(k.get<std::string>());
+            if (k.is_string()) table.key_names.push_back(k.get<std::string>());
         }
         for (const auto& k : t.value("key_types", json::array())) {
-            table.key_types.push_back(k.get<std::string>());
+            if (k.is_string()) table.key_types.push_back(k.get<std::string>());
         }
         abi.tables.push_back(std::move(table));
     }
@@ -291,10 +292,19 @@ ABI::ResolvedNode ABI::ResolvedNode::parse(std::string fullName, int id) {
                 }
             }
             if (digits) {
-                node.size = static_cast<uint32_t>(
-                    std::stoul(name.substr(open + 1, name.size() - open - 2)));
-                node.isArray = true;
-                name.resize(open);
+                // from_chars instead of stoul: an oversized [N] in an untrusted
+                // ABI must not throw out of the exception-free API. A size that
+                // does not fit leaves the name unsplit, so it resolves as an
+                // unknown type and errors normally.
+                const std::string digitText = name.substr(open + 1, name.size() - open - 2);
+                uint32_t parsed = 0;
+                const auto [ptr, ec] = std::from_chars(
+                    digitText.data(), digitText.data() + digitText.size(), parsed);
+                if (ec == std::errc{} && ptr == digitText.data() + digitText.size()) {
+                    node.size = parsed;
+                    node.isArray = true;
+                    name.resize(open);
+                }
             }
         }
     }
@@ -307,7 +317,22 @@ struct ABI::ResolveContext {
     std::vector<std::unique_ptr<ResolvedNode>>* arena;
     std::map<std::string, const ResolvedNode*> types;
     int id = 0;
+    // cycles are already handled by memoizing before recursing, but a long
+    // chain of distinct types in an untrusted ABI would otherwise recurse deep
+    // enough to overflow the native stack
+    int depth = 0;
 };
+
+namespace {
+constexpr int maxResolveDepth = 256;
+
+// bumps the context depth for the lifetime of one resolve() frame
+struct DepthGuard {
+    explicit DepthGuard(int& depth) : depth_(depth) { depth_++; }
+    ~DepthGuard() { depth_--; }
+    int& depth_;
+};
+}  // namespace
 
 const ABI::ResolvedNode* ABI::resolve(const std::string& name, ResolveContext& ctx) const {
     if (const auto existing = ctx.types.find(name); existing != ctx.types.end()) {
@@ -317,6 +342,12 @@ const ABI::ResolvedNode* ABI::resolve(const std::string& name, ResolveContext& c
     ResolvedNode* type = owned.get();
     ctx.arena->push_back(std::move(owned));
     ctx.types[type->typeName()] = type;
+    if (ctx.depth >= maxResolveDepth) {
+        // leave the node unresolved rather than recursing further: decoding it
+        // fails as an unknown type instead of overflowing the native stack
+        return type;
+    }
+    const DepthGuard guard(ctx.depth);
     for (const auto& typeDef : types) {
         if (typeDef.new_type_name == type->name) {
             type->ref = resolve(typeDef.type, ctx);

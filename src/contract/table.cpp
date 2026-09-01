@@ -342,7 +342,11 @@ Result<std::vector<json>> Table::all(const QueryParams& params) const {
 
 json Table::getFieldToIndex() const {
     json rv = json::object();
-    for (size_t i = 0; i < tableABI.key_names.size(); i++) {
+    // key_names and key_types are independent arrays in the ABI, so a contract
+    // can publish them at different lengths; upstream reads undefined there,
+    // indexing past the end here would read a std::string that does not exist
+    const size_t pairs = std::min(tableABI.key_names.size(), tableABI.key_types.size());
+    for (size_t i = 0; i < pairs; i++) {
         rv[tableABI.key_names[i]] = json{{"type", tableABI.key_types[i]},
                                          {"index_position", indexPositionInWords(i)}};
     }

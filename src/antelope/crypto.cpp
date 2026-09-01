@@ -216,6 +216,11 @@ Result<std::array<uint8_t, 33>> recover(std::span<const uint8_t> signature,
         return err(ErrorKind::Invalid, "Invalid signature or message length");
     }
     const int recid = signature[0] - 31;
+    if (recid < 0 || recid > 3) {
+        // libsecp256k1 rejects this for K1, but trezor only masks the low bits,
+        // so distinct signature strings would recover the same key
+        return err(ErrorKind::Invalid, "Invalid recovery id");
+    }
     std::array<uint8_t, 33> compressed{};
 
     if (type == KeyType::K1) {
@@ -248,6 +253,26 @@ Result<std::array<uint8_t, 33>> recover(std::span<const uint8_t> signature,
     return compressed;
 }
 
+namespace {
+
+// trezor's ecdsa_read_pubkey reads 32 bytes at pub_key+1 for a compressed key
+// and a further 32 at pub_key+33 for an 0x04 uncompressed key, without
+// checking the buffer. Every nist256p1 entry point must validate first.
+bool isReadableP256Pubkey(std::span<const uint8_t> pubkey) {
+    if (pubkey.empty()) {
+        return false;
+    }
+    if (pubkey[0] == 0x02 || pubkey[0] == 0x03) {
+        return pubkey.size() >= 33;
+    }
+    if (pubkey[0] == 0x04) {
+        return pubkey.size() >= 65;
+    }
+    return false;
+}
+
+}  // namespace
+
 Result<std::vector<uint8_t>> sharedSecret(std::span<const uint8_t> secret,
                                           std::span<const uint8_t> pubkey, KeyType type) {
     if (secret.size() != 32) {
@@ -271,6 +296,9 @@ Result<std::vector<uint8_t>> sharedSecret(std::span<const uint8_t> secret,
             return err(ErrorKind::Invalid, "Failed to derive shared secret");
         }
     } else if (type == KeyType::R1) {
+        if (!isReadableP256Pubkey(pubkey)) {
+            return err(ErrorKind::Invalid, "Invalid public key");
+        }
         std::array<uint8_t, 65> session{};
         if (ecdh_multiply(&nist256p1, secret.data(), pubkey.data(), session.data()) != 0) {
             return err(ErrorKind::Invalid, "Failed to derive shared secret");

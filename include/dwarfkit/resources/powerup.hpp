@@ -41,11 +41,22 @@ struct PowerUpStateResource {
 
     // Current number of allocated units (shift from REX -> PowerUp).
     double allocated() const {
+        // a zero target, or INT64_MIN / -1, traps the hardware divide; neither
+        // is reachable from valid powup.state, so report nothing allocated
+        if (target_weight_ratio == 0 ||
+            (target_weight_ratio == -1 && weight_ratio == INT64_MIN)) {
+            return 0;
+        }
         return 1.0 - static_cast<double>(weight_ratio / target_weight_ratio) / 100.0;
     }
     // Current percentage of reserved units. Integer division, faithfully
     // reproducing the upstream Int64 truncation (the TS getter claims float).
-    int64_t reserved() const { return weight == 0 ? 0 : utilization / weight; }
+    int64_t reserved() const {
+        if (weight == 0 || (weight == -1 && utilization == INT64_MIN)) {
+            return 0;
+        }
+        return utilization / weight;
+    }
     Asset::Symbol symbol() const { return min_price.symbol; }
 
     // Mimic eosio.system powerup.cpp update_utilization / fee math

@@ -40,7 +40,8 @@ Result<IdentityRequestResponse> createIdentityRequest(const EsrLoginContext& con
                                                       const std::string& buoyUrl);
 
 // Set a fresh buoy callback channel on the request (mutating) and return it.
-buoy::ReceiveOptions setTransactionCallback(SigningRequest& request, const std::string& buoyUrl);
+Result<buoy::ReceiveOptions> setTransactionCallback(SigningRequest& request,
+                                                    const std::string& buoyUrl);
 
 std::string getUserAgent();
 
@@ -48,7 +49,7 @@ std::string getUserAgent();
 CallbackType prepareCallback(const buoy::ReceiveOptions& callbackChannel);
 
 // A fresh buoy channel on the service: {service: buoyUrl, channel: uuid()}.
-buoy::ReceiveOptions prepareCallbackChannel(const std::string& buoyUrl);
+Result<buoy::ReceiveOptions> prepareCallbackChannel(const std::string& buoyUrl);
 
 // Check a login callback payload against the expected chain(s).
 Result<void> verifyLoginCallbackResponse(const json& callbackResponse,

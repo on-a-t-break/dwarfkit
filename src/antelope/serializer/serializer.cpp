@@ -23,6 +23,10 @@ struct PathEntry {
 struct Context {
     std::vector<PathEntry> codingPath;
     bool strictExtensions = false;
+    // decodeBinary bounds itself with codingPath, but the object and encode
+    // paths follow type aliases without pushing a path entry, so they need an
+    // explicit counter to stop a long alias chain from smashing the stack
+    int depth = 0;
 
     std::string path() const {
         std::string rv;
@@ -46,6 +50,15 @@ struct Context {
         return rv;
     }
 };
+
+// bumps the context depth for the lifetime of one frame
+struct DepthGuard {
+    explicit DepthGuard(int& depth) : depth_(depth) { depth_++; }
+    ~DepthGuard() { depth_--; }
+    int& depth_;
+};
+
+constexpr int maxCodingDepth = 32;
 
 std::string jsValue(const json& v) {
     // interpolation of the offending value in upstream error strings
@@ -136,6 +149,10 @@ Result<void> encodeInner(const json& value, const Node& type, ABIEncoder& encode
 }
 
 Result<void> encodeAny(const json& value, const Node& type, ABIEncoder& encoder, Context& ctx) {
+    if (ctx.depth > maxCodingDepth) {
+        return err(ErrorKind::Invalid, "Maximum encoding depth exceeded");
+    }
+    const DepthGuard guard(ctx.depth);
     const bool valueExists = !value.is_null();
     if (type.isOptional) {
         encoder.writeByte(valueExists ? 1 : 0);
@@ -288,7 +305,13 @@ Result<json> decodeBinary(const Node& type, ABIDecoder& decoder, Context& ctx) {
         json rv = json::array();
         for (uint32_t i = 0; i < len; i++) {
             ctx.codingPath.push_back({std::to_string(i), true, &type});
+            const size_t before = decoder.getPosition();
             DK_TRY(item, decodeBinaryInner(type, decoder, ctx));
+            if (decoder.getPosition() == before && rv.size() >= decoder.remaining() + 1) {
+                // an element type that consumes no bytes (an empty struct)
+                // would otherwise let a tiny payload claim billions of entries
+                return err(ErrorKind::Invalid, "Array length exceeds remaining data");
+            }
             rv.push_back(std::move(item));
             ctx.codingPath.pop_back();
         }
@@ -366,6 +389,10 @@ Result<json> decodeObjectInner(const json& value, const Node& type, Context& ctx
 }
 
 Result<json> decodeObject(const json& value, const Node& type, Context& ctx) {
+    if (ctx.depth > maxCodingDepth) {
+        return err(ErrorKind::Invalid, "Maximum decoding depth exceeded");
+    }
+    const DepthGuard guard(ctx.depth);
     if (value.is_null()) {
         if (type.isOptional) {
             return json(nullptr);

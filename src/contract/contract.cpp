@@ -99,9 +99,20 @@ Result<json> Contract::readonly(const Name& name, const json& data) const {
         !response["processed"]["except"].is_null()) {
         return err(ErrorKind::Api, formatExceptionMessage(response["processed"]["except"]));
     }
-    // Decode and return results
-    const std::string hexData =
-        response["processed"]["action_traces"][0].value("return_value_hex_data", "");
+    // Decode and return results. Every step is guarded: the response comes
+    // from a remote node, a missing key on a non-const json inserts a null and
+    // value() then throws out of this Result-returning function.
+    std::string hexData;
+    if (response.contains("processed") && response["processed"].is_object() &&
+        response["processed"].contains("action_traces") &&
+        response["processed"]["action_traces"].is_array() &&
+        !response["processed"]["action_traces"].empty()) {
+        const json& trace = response["processed"]["action_traces"][0];
+        if (trace.is_object() && trace.contains("return_value_hex_data") &&
+            trace["return_value_hex_data"].is_string()) {
+            hexData = trace["return_value_hex_data"].get<std::string>();
+        }
+    }
     const auto returnType =
         std::find_if(abi.action_results.begin(), abi.action_results.end(),
                      [&](const auto& result) { return result.name == name; });

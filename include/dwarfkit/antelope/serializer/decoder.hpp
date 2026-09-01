@@ -18,6 +18,10 @@ public:
 
     bool canRead(size_t bytes = 1) const { return pos_ + bytes <= array_.size(); }
 
+    // bytes left in the buffer; callers sizing allocations from a wire-supplied
+    // length must clamp to this
+    size_t remaining() const { return array_.size() - pos_; }
+
     // strictExtensions decode mode: absent binary-extension fields synthesize
     // their type's default value instead of staying absent.
     bool strictExtensions = false;
@@ -71,6 +75,11 @@ public:
         int bit = 0;
         for (;;) {
             DK_TRY(b, readByte());
+            // a varuint32 is at most 5 groups; shifting by 32 or more is
+            // undefined, so refuse the overlong encoding instead
+            if (bit >= 32) {
+                return err(ErrorKind::Invalid, "Varint too large");
+            }
             v |= static_cast<uint32_t>(b & 0x7f) << bit;
             bit += 7;
             if (!(b & 0x80)) {

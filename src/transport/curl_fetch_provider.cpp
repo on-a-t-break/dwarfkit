@@ -56,6 +56,12 @@ Result<FetchResponse> CurlFetchProvider::fetch(const FetchRequest& request) {
     curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, writeHeader);
     curl_easy_setopt(curl, CURLOPT_HEADERDATA, &response.headers);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 10L);
+    curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+    // libcurl's default protocol set includes file:, ftp: and friends; a URL
+    // that reaches here can come from a remote wallet's callback payload
+    curl_easy_setopt(curl, CURLOPT_PROTOCOLS_STR, "http,https");
+    curl_easy_setopt(curl, CURLOPT_REDIR_PROTOCOLS_STR, "http,https");
     curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "");
 
     curl_slist* headerList = nullptr;

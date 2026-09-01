@@ -44,7 +44,9 @@ Result<int64_t> parseInt64(std::string_view value) {
         }
         magnitude = magnitude * 10 + digit;
     }
-    return negative ? -static_cast<int64_t>(magnitude) : static_cast<int64_t>(magnitude);
+    // the limit check above admits magnitude == 2^63 for negatives, and
+    // negating INT64_MIN is undefined; take the two's complement unsigned
+    return negative ? static_cast<int64_t>(~magnitude + 1) : static_cast<int64_t>(magnitude);
 }
 
 }  // namespace
@@ -83,6 +85,11 @@ Result<Asset::Symbol> Asset::Symbol::from(std::string_view value) {
     bool anyDigit = false;
     for (const char c : value.substr(0, comma)) {
         if (c < '0' || c > '9') break;
+        // signed overflow is undefined and a precision this large is invalid
+        // anyway; stop accumulating once it cannot be a real precision
+        if (precision > 255) {
+            return err(ErrorKind::Invalid, "Invalid symbol string");
+        }
         precision = precision * 10 + (c - '0');
         anyDigit = true;
     }

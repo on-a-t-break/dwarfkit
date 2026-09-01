@@ -21,7 +21,7 @@ Result<IdentityRequestResponse> createIdentityRequest(const EsrLoginContext& con
     // whether this is a multichain request
     const bool isMultiChain = !(context.chain || context.chains.size() == 1);
 
-    const buoy::ReceiveOptions callbackChannel = prepareCallbackChannel(buoyUrl);
+    DK_TRY(callbackChannel, prepareCallbackChannel(buoyUrl));
 
     // the chain id(s) to use; no chain resolves to a TS null chainId, which
     // maps to anyChain here
@@ -62,8 +62,9 @@ Result<IdentityRequestResponse> createIdentityRequest(const EsrLoginContext& con
     return rv;
 }
 
-buoy::ReceiveOptions setTransactionCallback(SigningRequest& request, const std::string& buoyUrl) {
-    const buoy::ReceiveOptions callback = prepareCallbackChannel(buoyUrl);
+Result<buoy::ReceiveOptions> setTransactionCallback(SigningRequest& request,
+                                                    const std::string& buoyUrl) {
+    DK_TRY(callback, prepareCallbackChannel(buoyUrl));
     request.setCallback(callback.service + "/" + callback.channel, true);
     return callback;
 }
@@ -77,10 +78,11 @@ CallbackType prepareCallback(const buoy::ReceiveOptions& callbackChannel) {
     return {callbackChannel.service + "/" + callbackChannel.channel, true};
 }
 
-buoy::ReceiveOptions prepareCallbackChannel(const std::string& buoyUrl) {
+Result<buoy::ReceiveOptions> prepareCallbackChannel(const std::string& buoyUrl) {
     buoy::ReceiveOptions rv;
     rv.service = buoyUrl;
-    rv.channel = uuid();
+    DK_TRY(channel, uuid());
+    rv.channel = channel;
     return rv;
 }
 
@@ -121,9 +123,11 @@ Result<std::vector<Signature>> extractSignaturesFromCallback(const json& payload
     std::vector<std::pair<long, std::string>> indexed;
     for (const auto& item : payload.items()) {
         const std::string& key = item.key();
-        if (key.size() > 3 && key.compare(0, 3, "sig") == 0 &&
+        if (key.size() > 3 && key.size() <= 12 && key.compare(0, 3, "sig") == 0 &&
             std::all_of(key.begin() + 3, key.end(),
                         [](char c) { return c >= '0' && c <= '9'; })) {
+            // the digits come from a remote wallet's callback; the length cap
+            // keeps stol from throwing out of this Result-returning path
             indexed.push_back({std::stol(key.substr(3)), key});
         }
     }

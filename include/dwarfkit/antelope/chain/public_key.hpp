@@ -28,10 +28,16 @@ public:
     static PublicKey from(KeyType type, const Bytes& compressed) { return PublicKey(type, compressed); }
 
     // The core 33-byte compressed public key data, suitable for verification.
+    // WA keys carry trailing metadata; the slice is clamped because a WA key
+    // parsed from a string has no enforced length (upstream slice(0, 33)
+    // clamps the same way, C++ iterator arithmetic does not).
     Bytes getCompressedKeyBytes() const {
-        return type == KeyType::WA ? Bytes(std::vector<uint8_t>(data.array.begin(),
-                                                                data.array.begin() + 33))
-                                   : data;
+        return type == KeyType::WA
+                   ? Bytes(std::vector<uint8_t>(
+                         data.array.begin(),
+                         data.array.begin() +
+                             static_cast<std::ptrdiff_t>(std::min<size_t>(33, data.array.size()))))
+                   : data;
     }
 
     bool equals(const PublicKey& other) const {

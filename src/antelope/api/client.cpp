@@ -7,17 +7,32 @@ namespace apierror {
 namespace {
 
 // APIError.formatError
+//
+// Every accessor is type-checked: this parses an error body straight off the
+// wire, and json::value() throws when the receiver is not an object or the
+// stored value is not convertible.
+std::string jsonField(const json& value, const char* key) {
+    if (!value.is_object() || !value.contains(key) || !value.at(key).is_string()) {
+        return "";
+    }
+    return value.at(key).get<std::string>();
+}
+
 std::string formatError(const json& error) {
-    const std::string what = error.value("what", "");
-    const json details = error.value("details", json::array());
+    if (!error.is_object()) {
+        return error.is_string() ? error.get<std::string>() : "Unknown API error";
+    }
+    const std::string what = jsonField(error, "what");
+    const json details =
+        error.contains("details") ? error.at("details") : json::array();
     if (what == "unspecified" && details.is_array() && !details.empty() &&
-        details[0].value("file", "") == "http_plugin.cpp" &&
-        details[0].value("message", "").substr(0, 11) == "unknown key") {
+        jsonField(details[0], "file") == "http_plugin.cpp" &&
+        jsonField(details[0], "message").substr(0, 11) == "unknown key") {
         // fix cryptic error messages from nodeos for missing accounts
         return "Account not found";
     }
     if (what == "unspecified" && details.is_array() && !details.empty()) {
-        return details[0].value("message", "");
+        return jsonField(details[0], "message");
     }
     if (!what.empty()) {
         return what;

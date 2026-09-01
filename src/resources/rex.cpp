@@ -14,6 +14,12 @@ Asset REXState::exchange(const Asset& amount) const {
     const Int128 numerator = Int128(amount.units).multiplying(Int128(total_lendable.units));
     const double tokens =
         resources_detail::decimalDivide(numerator, Int128(total_rex.units), precision());
+    // an uninitialized rexpool (total_rex 0) divides to infinity, and casting a
+    // non-finite or out-of-range double to int64 is undefined
+    if (!std::isfinite(tokens) || tokens <= -9223372036854775808.0 ||
+        tokens >= 9223372036854775808.0) {
+        return Asset::fromUnits(0, symbol());
+    }
     // Asset.fromUnits(Number(...)) truncates the fraction through BN
     return Asset::fromUnits(static_cast<int64_t>(tokens), symbol());
 }

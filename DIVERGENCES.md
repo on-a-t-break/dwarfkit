@@ -173,3 +173,63 @@ Every intentional deviation from Wharfkit, one line of reason each. Anything not
 - The EventEmitter surfaces become std::function handlers registered through onData/onError/onClose (provider) and onMessage/onceMessage/onError/onClose (client); handlers fire synchronously when the lower layer feeds data. removeListener takes the id returned at registration (std::function has no equality).
 - The heartbeat timer is embedder-supplied through setTimeoutImpl (there is no default event loop); with no impl the heartbeat option is inert. The client owns no socket: P2PProvider implementations bridge to the engine or OS transport, and SimpleEnvelopeP2PProvider ports the 4-byte little-endian framing with the 8 MB read limit unchanged.
 - BlockHeader::id() returns Result (hashing the encoded header can surface encode errors); the camelCase TS field names are kept as member names, so json forms match upstream.
+
+## Hardening (pre-1.0 security pass)
+
+These deviate from upstream deliberately. Wharfkit runs in a browser or Node,
+where a bad value throws a catchable error; the same input in a native library
+crashes the host process, so the port refuses it instead. Each one returns an
+error through the normal `Result<T>` channel.
+
+- Untrusted json accessors return errors instead of throwing. Upstream relies on
+  JS coercion (`Number("abc")` is NaN, `undefined[0]` is a catchable TypeError);
+  the C++ equivalents (`std::stof`, `std::stoul`, `nlohmann::get<T>`, `.at()`,
+  `operator[]`) throw or are undefined, and the public API is exception-free.
+  Applies across the serializer traits, the ABI parser, `APIClient::formatError`,
+  the ESR callback payload fields, and the resource provider response.
+- Array decoding is bounded by the input. The reservation is clamped to the
+  bytes that remain, and an element type that consumes no bytes (an empty
+  struct) cannot produce more entries than the buffer could encode. Upstream has
+  no cap; in C++ a 5-byte payload otherwise requested a 137 GB allocation.
+- Decompression is capped at `maxInflateOutput` (16 MB). Upstream delegates to
+  pako with no ceiling; deflate reaches roughly 1000:1, so an `esr:` URI of a
+  few hundred KB could exhaust memory.
+- Recursion is bounded: `ABI::resolve` stops at 256 links and leaves the type
+  unresolved, and the object encode/decode paths carry the same depth-32 limit
+  the binary decoder already had. Upstream recursion depth is bounded only by
+  the JS stack, which raises a catchable RangeError; a native stack overflow is
+  not catchable.
+- `readVaruint32` rejects an overlong encoding rather than shifting a `uint32_t`
+  by 32 or more, which is undefined. JS masks the shift count, so upstream is
+  well defined by accident.
+- `getCompressedKeyBytes` clamps its 33-byte slice. Upstream `slice(0, 33)`
+  clamps for short WA keys; C++ iterator arithmetic read past the buffer and
+  returned the adjacent heap to the caller.
+- `crypto::sharedSecret` and `crypto::verify` validate a nist256p1 public key's
+  prefix and length before handing it to trezor, which reads 32 bytes at +1 and
+  another 32 at +33 for an `0x04` prefix without checking the buffer. Upstream's
+  elliptic validates the encoding and the point itself.
+- The R1 recovery id is range-checked. libsecp256k1 rejects an out-of-range
+  recid for K1, but trezor masks the low bits, so distinct signature strings
+  recovered the same key.
+- The resource provider compares the full authorization of an unchanged action,
+  actor and permission across every level. Upstream compares only
+  `authorization[0].actor`, so a provider could rewrite `alice@active` to
+  `alice@owner` and still have the action count as original, bypassing the
+  action allowlist and the fee accounting.
+- `uuid()` returns `Result<std::string>` and fails rather than emitting an
+  all-zero UUID if the OS CSPRNG fails; it is used as the buoy callback channel,
+  where a predictable value lets anyone subscribe to the signature.
+- The Anchor session nonce comes from the OS CSPRNG rather than
+  `std::random_device`, which is not required to be nondeterministic.
+- `CurlFetchProvider` restricts libcurl to http and https, for requests and
+  redirects, and bounds redirects. libcurl's default protocol set includes
+  `file:` and `ftp:`, and a request URL can originate in a remote wallet's
+  callback payload.
+- Numeric edges that are undefined in C++ and merely imprecise in JS are guarded:
+  negating `INT64_MIN` when parsing an asset, symbol precision overflow,
+  `TimePoint::toMilliseconds` near the int64 bounds, integer division by zero in
+  the PowerUp getters, and casting a non-finite REX exchange rate to `int64_t`.
+- `Table::getFieldToIndex` pairs `key_names` with `key_types` only up to the
+  shorter of the two. The ABI carries them as independent arrays; upstream reads
+  `undefined` past the end, C++ read a `std::string` that was never constructed.

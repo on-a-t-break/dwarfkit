@@ -119,8 +119,17 @@ TimePoint TimePoint::from(const BlockTimestamp& value) {
 }
 
 int64_t TimePoint::toMilliseconds() const {
-    // value.dividing(1000, 'round'): BN divRound, half away from zero
-    return value >= 0 ? (value + 500) / 1000 : -((-value + 500) / 1000);
+    // value.dividing(1000, 'round'): BN divRound, half away from zero.
+    // value + 500 overflows near INT64_MAX and -value is undefined at
+    // INT64_MIN, so round the magnitude as unsigned.
+    if (value >= 0) {
+        if (value > std::numeric_limits<int64_t>::max() - 500) {
+            return (std::numeric_limits<int64_t>::max() - 500) / 1000;
+        }
+        return (value + 500) / 1000;
+    }
+    const uint64_t magnitude = ~static_cast<uint64_t>(value) + 1;
+    return -static_cast<int64_t>((magnitude + 500) / 1000);
 }
 
 std::string TimePoint::toString() const { return isoFromMilliseconds(toMilliseconds()); }

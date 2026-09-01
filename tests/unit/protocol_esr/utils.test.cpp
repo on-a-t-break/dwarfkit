@@ -47,11 +47,11 @@ TEST_SUITE("pesr-utils") {
     }
 
     TEST_CASE("should generate a UUID string") {
-        CHECK(matchesUuid(uuid()));
+        CHECK(matchesUuid(uuid().value()));
         // v4 layout markers
-        const auto value = uuid();
+        const auto value = uuid().value();
         CHECK(value[14] == '4');
         CHECK((value[19] == '8' || value[19] == '9' || value[19] == 'a' || value[19] == 'b'));
-        CHECK(uuid() != uuid());
+        CHECK(uuid().value() != uuid().value());
     }
 }

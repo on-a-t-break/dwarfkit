@@ -11,11 +11,19 @@ bool sameActionAs(const Action& original, const Action& modified) {
     const bool matchesAccount = original.account == modified.account;
     // Ensure the original contract action matches
     const bool matchesName = original.name == modified.name;
-    // Ensure the original authorization is intact
+    // Ensure the original authorization is intact. Upstream compares only
+    // authorization[0].actor, which lets a provider rewrite alice@active to
+    // alice@owner and have the action still count as "original", bypassing the
+    // allowlist and the fee accounting. Compare every level in full instead
+    // (see DIVERGENCES.md).
     const bool matchesAuthorization =
         original.authorization.size() == modified.authorization.size() &&
         !original.authorization.empty() &&
-        original.authorization[0].actor == modified.authorization[0].actor;
+        std::equal(original.authorization.begin(), original.authorization.end(),
+                   modified.authorization.begin(),
+                   [](const PermissionLevel& a, const PermissionLevel& b) {
+                       return a.actor == b.actor && a.permission == b.permission;
+                   });
     // Ensure the original action data matches
     const bool matchesData = original.data == modified.data;
     return matchesAccount && matchesName && matchesAuthorization && matchesData;
@@ -375,6 +383,13 @@ Result<TransactHookResponseType> TransactPluginResourceProvider::request(
 
 Result<Transaction> TransactPluginResourceProvider::getModifiedTransaction(
     const json& response) const {
+    // the response comes from a remote service and is parsed before
+    // validateResponseData runs, so every step is checked here
+    if (!response.is_object() || !response.contains("data") || !response["data"].is_object() ||
+        !response["data"].contains("request") || !response["data"]["request"].is_array() ||
+        response["data"]["request"].size() < 2 || !response["data"]["request"][0].is_string()) {
+        return err(ErrorKind::Plugin, "Invalid request provided by resource provider.");
+    }
     const json& request = response["data"]["request"];
     const std::string variant = request[0].get<std::string>();
     if (variant == "action") {
@@ -394,22 +409,36 @@ Result<Transaction> TransactPluginResourceProvider::getModifiedTransaction(
 Result<SigningRequest> TransactPluginResourceProvider::createRequest(
     const json& response, TransactContext& context) const {
     // Create a new signing request based on the response
+    if (!response.is_object() || !response.contains("data") || !response["data"].is_object() ||
+        !response["data"].contains("request") || !response["data"]["request"].is_array() ||
+        response["data"]["request"].size() < 2) {
+        return err(ErrorKind::Plugin, "Invalid request provided by resource provider.");
+    }
     TransactArgs args;
     args.transaction = response["data"]["request"][1];
     DK_TRY(request, context.createRequest(args));
 
     // Set the required fee onto the request itself for wallets to process
     const json& data = response["data"];
-    if (response.value("code", 0) == 402 && data.contains("fee")) {
+    const int code = response.contains("code") && response["code"].is_number_integer()
+                         ? response["code"].get<int>()
+                         : 0;
+    if (code == 402 && data.contains("fee") && data["fee"].is_string()) {
         DK_TRY(fee, Asset::from(data["fee"].get<std::string>()));
         DK_CHECK(request.setInfoKey("txfee", fee));
     }
 
     // If the fee costs exist, set them for the signature provider to consume
-    if (data.contains("costs")) {
-        request.setInfoKey("txfeecpu", std::string_view(data["costs"]["cpu"].get<std::string>()));
-        request.setInfoKey("txfeenet", std::string_view(data["costs"]["net"].get<std::string>()));
-        request.setInfoKey("txfeeram", std::string_view(data["costs"]["ram"].get<std::string>()));
+    if (data.contains("costs") && data["costs"].is_object()) {
+        const auto cost = [&](const char* key) -> std::string {
+            const json& costs = data["costs"];
+            return costs.contains(key) && costs[key].is_string()
+                       ? costs[key].get<std::string>()
+                       : std::string();
+        };
+        request.setInfoKey("txfeecpu", std::string_view(cost("cpu")));
+        request.setInfoKey("txfeenet", std::string_view(cost("net")));
+        request.setInfoKey("txfeeram", std::string_view(cost("ram")));
     }
 
     return request;

@@ -28,12 +28,13 @@ Result<std::vector<uint8_t>> deflateImpl(std::span<const uint8_t> data, int wind
     return out;
 }
 
-Result<std::vector<uint8_t>> inflateImpl(std::span<const uint8_t> data, int windowBits) {
+Result<std::vector<uint8_t>> inflateImpl(std::span<const uint8_t> data, int windowBits,
+                                        size_t maxOutput) {
     z_stream stream{};
     if (inflateInit2(&stream, windowBits) != Z_OK) {
         return err(ErrorKind::Internal, "inflate init failed");
     }
-    std::vector<uint8_t> out(data.size() * 4 + 64);
+    std::vector<uint8_t> out(std::min(data.size() * 4 + 64, maxOutput));
     stream.next_in = data.data();
     stream.avail_in = static_cast<uInt>(data.size());
     size_t written = 0;
@@ -47,7 +48,14 @@ Result<std::vector<uint8_t>> inflateImpl(std::span<const uint8_t> data, int wind
         }
         if (status == Z_OK || status == Z_BUF_ERROR) {
             if (stream.avail_out == 0) {
-                out.resize(out.size() * 2);
+                // a compressed payload is untrusted (an esr: URI is attacker
+                // supplied and zlib reaches ~1000:1), so cap the output rather
+                // than doubling until the allocator gives up
+                if (out.size() >= maxOutput) {
+                    inflateEnd(&stream);
+                    return err(ErrorKind::Invalid, "compressed data too large");
+                }
+                out.resize(std::min(out.size() * 2, maxOutput));
                 continue;
             }
             inflateEnd(&stream);
@@ -67,16 +75,16 @@ Result<std::vector<uint8_t>> zlibCompress(std::span<const uint8_t> data) {
     return deflateImpl(data, 15);
 }
 
-Result<std::vector<uint8_t>> zlibUncompress(std::span<const uint8_t> data) {
-    return inflateImpl(data, 15);
+Result<std::vector<uint8_t>> zlibUncompress(std::span<const uint8_t> data, size_t maxOutput) {
+    return inflateImpl(data, 15, maxOutput);
 }
 
 Result<std::vector<uint8_t>> deflateRaw(std::span<const uint8_t> data) {
     return deflateImpl(data, -15);
 }
 
-Result<std::vector<uint8_t>> inflateRaw(std::span<const uint8_t> data) {
-    return inflateImpl(data, -15);
+Result<std::vector<uint8_t>> inflateRaw(std::span<const uint8_t> data, size_t maxOutput) {
+    return inflateImpl(data, -15, maxOutput);
 }
 
 }  // namespace dwarfkit
