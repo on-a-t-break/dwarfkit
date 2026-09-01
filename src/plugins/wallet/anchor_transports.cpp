@@ -98,8 +98,16 @@ Result<WalletPluginLoginResponse> NativeTransport::login(LoginContext& context,
     if (has("link_ch") && has("link_key") && has("link_name")) {
         data["requestKey"] = bundle.requestKey.toString();
         data["privateKey"] = bundle.privateKey.toString();
+        // link_ch is chosen by the wallet and later becomes a request URL. The
+        // curl provider is restricted to http/https, but reject anything else
+        // here rather than persisting it into the session.
+        const std::string channelUrl = payload["link_ch"].get<std::string>();
+        if (!channelUrl.starts_with("http://") && !channelUrl.starts_with("https://") &&
+            !channelUrl.starts_with("ws://") && !channelUrl.starts_with("wss://")) {
+            return err(ErrorKind::Invalid, "Invalid callback channel from the wallet");
+        }
         data["signerKey"] = payload["link_key"];
-        data["channelUrl"] = payload["link_ch"];
+        data["channelUrl"] = channelUrl;
         data["channelName"] = payload["link_name"];
 
         if (has("link_meta")) {

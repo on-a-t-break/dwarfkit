@@ -256,6 +256,18 @@ error through the normal `Result<T>` channel.
   string literals and as bare identifiers, so a quote or newline would inject
   code into the header the developer compiles.
 
+## Supply chain and residual hardening
+
+- The fetched dependencies (libsecp256k1, libcurl) are pinned by commit rather
+  than by tag. A tag can be moved, and one of these is the signing library.
+- `FileSessionStorage::storageKey` replaces path separators and defuses a
+  parent reference. Every call site in the library passes a literal, so this
+  guards an embedder that supplies its own key.
+- The Anchor and TackleBox transports reject a `link_ch` whose scheme is not
+  http/https/ws/wss before persisting it. The value is chosen by the wallet and
+  later becomes a request URL; the curl provider is separately restricted to
+  http and https.
+
 ## TackleBox wallet plugin
 
 - `WalletPluginTackleBox` has no upstream counterpart. TackleBox implements the

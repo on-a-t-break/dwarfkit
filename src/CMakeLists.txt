@@ -131,7 +131,8 @@ if(DK_WITH_CURL)
     endif()
     FetchContent_Declare(curl
       GIT_REPOSITORY https://github.com/curl/curl
-      GIT_TAG curl-8_10_1
+      # pinned by commit rather than tag; curl-8_10_1 pointed here
+      GIT_TAG 7eb8c048470ed2cc14dca75be9c1cdae7ac8498b
       GIT_SHALLOW TRUE)
     FetchContent_MakeAvailable(curl)
   endif()

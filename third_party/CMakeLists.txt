@@ -77,8 +77,9 @@ set(SECP256K1_BUILD_EXHAUSTIVE_TESTS OFF CACHE BOOL "" FORCE)
 set(SECP256K1_BUILD_CTIME_TESTS OFF CACHE BOOL "" FORCE)
 set(SECP256K1_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(SECP256K1_DISABLE_SHARED ON CACHE BOOL "" FORCE)
+# pinned by commit, not by tag: a tag can be moved, and this is the signing
+# library. 0cdc758 is what v0.6.0 pointed at.
 FetchContent_Declare(secp256k1
   GIT_REPOSITORY https://github.com/bitcoin-core/secp256k1
-  GIT_TAG v0.6.0
-  GIT_SHALLOW TRUE)
+  GIT_TAG 0cdc758a56360bf58a851fe91085a327ec97685a)
 FetchContent_MakeAvailable(secp256k1)

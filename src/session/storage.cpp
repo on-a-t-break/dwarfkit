@@ -9,7 +9,19 @@ FileSessionStorage::FileSessionStorage(std::filesystem::path directory, std::str
     : directory_(std::move(directory)), keyPrefix_(std::move(keyPrefix)) {}
 
 std::string FileSessionStorage::storageKey(std::string_view key) const {
-    return "wharf-" + keyPrefix_ + "-" + std::string(key);
+    // the key becomes a filename. Every caller in the library passes a
+    // literal, but an embedder using its own key must not be able to escape
+    // the directory with separators or a parent reference.
+    std::string safe(key);
+    for (char& c : safe) {
+        if (c == '/' || c == '\\' || c == ':') {
+            c = '_';
+        }
+    }
+    if (safe.find("..") != std::string::npos) {
+        safe = "_" + safe;
+    }
+    return "wharf-" + keyPrefix_ + "-" + safe;
 }
 
 Result<void> FileSessionStorage::write(std::string_view key, std::string_view data) {
