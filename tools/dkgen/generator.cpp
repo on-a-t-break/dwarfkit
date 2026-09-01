@@ -284,7 +284,10 @@ namespace {
 // bare identifiers in the generated header. A name containing a quote or a
 // newline would inject code into a file the developer then compiles.
 bool isSafeAbiName(std::string_view name) {
-    if (name.empty() || name.size() > 64) {
+    // the bound is a sanity check only; real ABIs carry long generated names
+    // (AtomicAssets has a 230-character variant), so it must stay generous.
+    // The security property here is the character set.
+    if (name.empty() || name.size() > 1024) {
         return false;
     }
     return std::all_of(name.begin(), name.end(), [](unsigned char c) {
