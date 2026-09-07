@@ -1,8 +1,13 @@
+<p align="center"><img src="assets/dwarfkit.svg" width="180" alt="Dwarfkit"></p>
+
 # Dwarfkit
+
+[![release](https://img.shields.io/github/v/release/on-a-t-break/dwarfkit)](https://github.com/on-a-t-break/dwarfkit/releases)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Native C++20 port of [Wharfkit](https://github.com/wharfkit) (the Greymass SDK suite for Antelope blockchains), built as a static library for C++ software, primarily Unreal Engine and Godot.
 
-Same package boundaries, class names, method names, option shapes, hook names and error semantics as Wharfkit; anyone who knows Wharfkit should be able to use Dwarfkit without relearning it. Deviations forced by C++ or game engines (no exceptions, no promises, no browser) are listed in [DIVERGENCES.md](DIVERGENCES.md). Each module is ported file by file against the pinned upstream sources in [PORT_MANIFEST.md](PORT_MANIFEST.md) and proves byte parity with Wharfkit's own recorded fixtures (422 test cases, 2779 assertions).
+Same package boundaries, class names, method names, option shapes, hook names and error semantics as Wharfkit; anyone who knows Wharfkit should be able to use Dwarfkit without relearning it. Deviations forced by C++ or game engines (no exceptions, no promises, no browser) are listed in [DIVERGENCES.md](DIVERGENCES.md). Each module is ported file by file against the pinned upstream sources in [PORT_MANIFEST.md](PORT_MANIFEST.md) and proves byte parity with Wharfkit's own recorded fixtures (443 test cases, 3037 assertions).
 
 ```cpp
 #include <dwarfkit/plugins/wallet/privatekey.hpp>
@@ -55,7 +60,7 @@ if (result) {
 | @wharfkit/cli `generate` | `dkgen` tool | done, golden-output tests |
 | engine adapters | `adapters/godot`, `adapters/unreal` | Godot: builds and loads against godot-cpp 4.3 (verified on Windows); Unreal: reviewed against 5.4, compile inside a UE project |
 
-Wallet plugins: `WalletPluginPrivateKey`, `WalletPluginAnchor`, `WalletPluginCleos`, `WalletPluginCloudWallet`, and `WalletPluginTackleBox` for [TackleBox](https://github.com/on-a-t-break/tacklebox), a native C++ Antelope wallet that speaks the wallet half of anchor-link.
+Wallet plugins: `WalletPluginPrivateKey`, `WalletPluginAnchor`, `WalletPluginCleos`, `WalletPluginCloudWallet`, and `WalletPluginTackleBox` for <img src="assets/tacklebox.svg" width="20" alt=""> [TackleBox](https://github.com/on-a-t-break/tacklebox), a native C++ Antelope wallet that speaks the wallet half of anchor-link.
 
 Not ported (browser-only or not applicable): web-renderer, react/vue hooks, browser-extension wallet plugins (Wombat, TokenPocket, Scatter...). See PORT_MANIFEST.md for every upstream repo's disposition.
 
@@ -70,6 +75,8 @@ ctest --test-dir build -C Debug
 ```
 
 Options: `DK_WITH_CURL` (default ON) builds the `dwarfkit_curl` transport (fetches libcurl 8.10 when not found); `DK_BUILD_TESTS` / `DK_BUILD_TOOLS` (dkgen) / `DK_BUILD_EXAMPLES` default ON at the top level; `DK_LIVE_TESTS` enables tests that hit live chain endpoints.
+
+Each [release](https://github.com/on-a-t-break/dwarfkit/releases) also ships a prebuilt Windows x64 archive (MSVC 2022, Release, `/MD`) laid out exactly like an installed prefix, plus a standalone `dkgen.exe`; unzip it and point `CMAKE_PREFIX_PATH` or the engine build at it instead of building from source.
 
 ### Installing / find_package
 
@@ -121,6 +128,7 @@ src/                implementation
 tools/dkgen/        contract code generator
 adapters/unreal/    UE 5.4+ plugin (source; see its README)
 adapters/godot/     Godot 4.3+ GDExtension (source; see its README)
+assets/             project marks: dwarfkit.svg, tacklebox.svg, social-preview.png
 tests/              doctest suites + Wharfkit's recorded fixtures
 reference/          pinned upstream clones the port is checked against
 ```

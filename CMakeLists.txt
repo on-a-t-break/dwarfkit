@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(dwarfkit VERSION 0.1.0 LANGUAGES C CXX)
+project(dwarfkit VERSION 1.0.0 LANGUAGES C CXX)
 
 option(DK_WITH_CURL "Build the libcurl transport (dwarfkit_curl)" ON)
 option(DK_BUILD_TESTS "Build dwarfkit_tests" ${PROJECT_IS_TOP_LEVEL})

@@ -4,3 +4,4 @@ config_version=5
 config/name="Dwarfkit Demo"
 run/main_scene="res://login_transfer.tscn"
 config/features=PackedStringArray("4.3")
+config/icon="res://dwarfkit.svg"

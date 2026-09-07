@@ -1,11 +1,14 @@
 {
     "FileVersion": 3,
     "Version": 1,
-    "VersionName": "0.1.0",
+    "VersionName": "1.0.0",
     "FriendlyName": "Dwarfkit",
     "Description": "Antelope blockchain SDK (native Wharfkit port): sessions, signing, contracts.",
     "Category": "Blockchain",
     "CreatedBy": "Dwarfkit",
+    "CreatedByURL": "https://github.com/on-a-t-break/dwarfkit",
+    "DocsURL": "https://github.com/on-a-t-break/dwarfkit/blob/main/adapters/unreal/Dwarfkit/README.md",
+    "SupportURL": "https://github.com/on-a-t-break/dwarfkit/issues",
     "CanContainContent": false,
     "Modules": [
         {

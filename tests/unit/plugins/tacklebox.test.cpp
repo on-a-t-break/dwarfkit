@@ -109,6 +109,10 @@ TEST_SUITE("tacklebox-plugin") {
         WalletPluginTackleBox plugin;
         CHECK(plugin.id() == "tacklebox");
         CHECK(plugin.metadata().name == "TackleBox");
+        // the wallet mark ships with the plugin, as Anchor ships its own upstream
+        REQUIRE(plugin.metadata().logo.has_value());
+        CHECK(plugin.metadata().logo->light.starts_with("data:image/svg+xml;base64,"));
+        CHECK(plugin.metadata().logo->dark == plugin.metadata().logo->light);
         // native app only: neither selector is delegated to the wallet
         CHECK_FALSE(plugin.config().requiresChainSelect);
         CHECK_FALSE(plugin.config().requiresPermissionSelect);

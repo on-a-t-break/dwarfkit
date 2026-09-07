@@ -4,7 +4,7 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 
 ## Current state
 
-- Phase: 8 complete, plus the post-blueprint security pass and the 2026-09-07 verification pass (below). Nothing tracked remains; future work is upstream re-syncs, and compiling the Unreal plugin inside a UE 5.4+ project, which no machine used so far has had.
+- Phase: released as 1.0.0 on 2026-09-07 (tag `v1.0.0`, GitHub release with Windows x64 archives) after phase 8, the security pass and the verification pass (below). Nothing tracked remains; future work is upstream re-syncs, and compiling the Unreal plugin inside a UE 5.4+ project, which no machine used so far has had.
 - In flight: nothing
 - Notes: CancelToken deferred to protocol-esr. strictExtensions decoding ported (DecodeOptions on both static and dynamic decode; default synthesis with circular detection). K1 byte-parity vectors verified against elliptic via node (scratchpad/elliptest). miniz was replaced with vendored zlib 1.3.1 for byte parity with pako (fixture hashes + ESR URIs); see DIVERGENCES.md.
 
@@ -77,3 +77,9 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 - [x] Godot: the GDExtension compiles and links against godot-cpp 4.3 on Windows and loads through the same LoadLibrary + entry-symbol lookup Godot's loader performs. The documented build was broken (CRT mismatch, C++17, four missing archives) and the threading model deadlocked on `login()` then `logout()`; both rewritten, see DIVERGENCES.md. Not exercised inside a running editor.
 - [x] Unreal: reviewed line by line against the current headers and rewritten for the same lifetime and threading defects, the missing link set and the include layout; compiles only inside a UE project, and the UE_5.8 folder on the verification machine was an empty launcher stub, so this is reviewed rather than compiled.
 - [x] Examples compile against the current headers; git ignores every adapter input (godot-cpp checkout, staged archives, copied headers).
+
+## Release 1.0.0 (2026-09-07)
+
+- [x] Version 1.0.0 in CMake, `dwarfkit::versionString` and the Unreal `.uplugin`; CHANGELOG.md added; SECURITY.md support policy updated to the 1.x line.
+- [x] Project marks: `assets/dwarfkit.svg` heads the README and is the repository's social preview (`assets/social-preview.png`), the Unreal plugin icon (`Resources/Icon128.png`) and the Godot class and project icon (`[icons]` in the demo `.gdextension`); `assets/tacklebox.svg` ships as `WalletPluginTackleBox`'s metadata logo (tested) and marks the plugin in the README.
+- [x] Tagged `v1.0.0`; the GitHub release carries `dwarfkit-1.0.0-windows-x64-msvc.zip` (installed prefix: headers, the five archives, package config, LICENSE and NOTICE), `dkgen-1.0.0-windows-x64.zip` and `SHA256SUMS.txt`, built from `build-release` after both suites passed at 1.0.0 and the archive was consumed by the out-of-tree consumer. Repository topics set.

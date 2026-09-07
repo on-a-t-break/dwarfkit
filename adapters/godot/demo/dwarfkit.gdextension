@@ -9,3 +9,8 @@ linux.debug.x86_64 = "res://bin/libdwarfkit.linux.template_debug.x86_64.so"
 linux.release.x86_64 = "res://bin/libdwarfkit.linux.template_release.x86_64.so"
 macos.debug = "res://bin/libdwarfkit.macos.template_debug.framework"
 macos.release = "res://bin/libdwarfkit.macos.template_release.framework"
+
+[icons]
+DkSessionKit = "res://dwarfkit.svg"
+DkSession = "res://dwarfkit.svg"
+DkUserInterface = "res://dwarfkit.svg"

@@ -2,8 +2,8 @@
 
 ## Supported versions
 
-Dwarfkit is pre-1.0. Only the latest commit on `main` receives security
-fixes.
+The latest 1.x release and the current `main` receive security fixes;
+older releases do not.
 
 ## Reporting a vulnerability
 

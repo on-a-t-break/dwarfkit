@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">Dwarfkit</title>
+  <desc id="desc">A determined dwarf with a white angular helmet, black brows, and a broad orange beard.</desc>
+  <g stroke="#101114" stroke-width="8" stroke-linejoin="round">
+    <path fill="#FFFFFF" d="M61 100 47 110v36l20 16h122l20-16v-36l-14-10z"/>
+    <path fill="#FF7A1A" d="M62 119h132l-2 64-29 35-35 22-35-22-29-35z"/>
+    <path fill="#FFFFFF" d="M70 91h116v49l-24 29h-68l-24-29z"/>
+    <path fill="#FFFFFF" d="M54 104 67 62l34-32h54l34 32 13 42-18 20H72z"/>
+    <path fill="#101114" d="m110 32-9 52h54l-9-52z"/>
+    <path fill="#FFFFFF" d="M55 91h146v26H55z"/>
+  </g>
+  <path fill="#101114" d="m78 122 34 7-5 11-29-6zm100 0-34 7 5 11 29-6z"/>
+  <path fill="#FF7A1A" stroke="#101114" stroke-width="8" stroke-linejoin="round" d="m128 153-22-6-17 11-15 23 31-1 23-13 23 13 31 1-15-23-17-11z"/>
+  <path fill="#FFFFFF" stroke="#101114" stroke-width="7" stroke-linejoin="round" d="m117 140-5 15 16 9 16-9-5-15"/>
+  <path stroke="#101114" stroke-width="7" stroke-linecap="round" d="m100 190 8 13m48-13-8 13m-20-20v34"/>
+  <path fill="#FF7A1A" d="m128 94 10 10-10 10-10-10z"/>
+</svg>
