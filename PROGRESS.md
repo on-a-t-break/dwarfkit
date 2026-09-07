@@ -4,7 +4,7 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 
 ## Current state
 
-- Phase: 8 complete. All blueprint phases done, and both deferred items have landed (strictExtensions decoding, antelope p2p module). Nothing tracked remains; future work is upstream re-syncs.
+- Phase: 8 complete, plus the post-blueprint security pass and the 2026-09-07 verification pass (below). Nothing tracked remains; future work is upstream re-syncs, and compiling the Unreal plugin inside a UE 5.4+ project, which no machine used so far has had.
 - In flight: nothing
 - Notes: CancelToken deferred to protocol-esr. strictExtensions decoding ported (DecodeOptions on both static and dynamic decode; default synthesis with circular detection). K1 byte-parity vectors verified against elliptic via node (scratchpad/elliptest). miniz was replaced with vendored zlib 1.3.1 for byte parity with pako (fixture hashes + ESR URIs); see DIVERGENCES.md.
 
@@ -68,3 +68,12 @@ Rules: see CLAUDE.md. Tick an item only when it builds, its tests are green, and
 ## Session log
 
 - 2026-08-26: session 1 started. Environment: Windows 11, VS 2022 Build Tools 17.14, CMake 4.3.3, Ninja 1.13, MinGW g++ 16.1, git 2.51, gh authed. Canonical build: VS generator x64.
+
+## Pre-release verification pass (2026-09-07)
+
+- [x] Library: fresh Release configure from scratch (commit-pinned FetchContent), Debug and Release builds with zero compiler warnings, full suite green in both (443 cases / 3037 assertions); Release is the first NDEBUG build the suite ran under.
+- [x] Install: `cmake --install` prefix with the five archives and the package config; an out-of-tree `find_package(Dwarfkit)` consumer configures, links and runs code through every transitive archive (secp256k1 + precomputed, trezor, zlib, bcrypt).
+- [x] Engine-style consumption: the same consumer built with a bare include directory, the five archives by path, no package config and MSVC's legacy preprocessor (asserted via `_MSVC_TRADITIONAL`) compiles, links and runs, so consumers need neither `/Zc:preprocessor` nor the CMake config. Required the `DK_EXPAND` rescan in `DK_FIELDS` and the `verify` macro guard (Unreal's CoreMinimal.h); both in DIVERGENCES.md.
+- [x] Godot: the GDExtension compiles and links against godot-cpp 4.3 on Windows and loads through the same LoadLibrary + entry-symbol lookup Godot's loader performs. The documented build was broken (CRT mismatch, C++17, four missing archives) and the threading model deadlocked on `login()` then `logout()`; both rewritten, see DIVERGENCES.md. Not exercised inside a running editor.
+- [x] Unreal: reviewed line by line against the current headers and rewritten for the same lifetime and threading defects, the missing link set and the include layout; compiles only inside a UE project, and the UE_5.8 folder on the verification machine was an empty launcher stub, so this is reviewed rather than compiled.
+- [x] Examples compile against the current headers; git ignores every adapter input (godot-cpp checkout, staged archives, copied headers).

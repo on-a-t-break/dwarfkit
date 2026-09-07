@@ -1,20 +1,26 @@
 // dwarfkit::UserInterface bridged to UDwarfkitUI: calls arrive on the kit
-// worker, are dispatched to the game thread and awaited with an FEvent.
+// worker, are dispatched to the game thread and awaited with a bound and the
+// cancel token. The UI is looked up through the subsystem at call time, so
+// SetUI takes effect whenever it is called.
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Async/Async.h"
 
 THIRD_PARTY_INCLUDES_START
 #include <dwarfkit/session.hpp>
 THIRD_PARTY_INCLUDES_END
 
+#include "DkUnrealAsync.h"
+#include "DwarfkitSubsystem.h"
 #include "DwarfkitUI.h"
 
 class FDkUnrealUserInterface final : public dwarfkit::AbstractUserInterface
 {
 public:
-    explicit FDkUnrealUserInterface(TWeakObjectPtr<UDwarfkitUI> InUI) : UI(InUI) {}
+    explicit FDkUnrealUserInterface(TWeakObjectPtr<UDwarfkitSubsystem> InSubsystem)
+        : Subsystem(InSubsystem)
+    {
+    }
 
     dwarfkit::Result<dwarfkit::UserInterfaceLoginResponse> login(
         dwarfkit::LoginContext& Context) override
@@ -34,7 +40,8 @@ public:
     dwarfkit::Result<void> onError(const dwarfkit::Error& Error) override
     {
         RunOnGameThread([Message = FString(UTF8_TO_TCHAR(Error.message.c_str()))](
-                            UDwarfkitUI* Widget) { Widget->OnErrorMessage(Message); });
+                            UDwarfkitUI* Widget) { Widget->OnErrorMessage(Message); },
+                        dwarfkit::CancelToken());
         return {};
     }
 
@@ -55,8 +62,12 @@ public:
     dwarfkit::Result<void> onBroadcastComplete() override { return {}; }
 
     dwarfkit::Result<dwarfkit::PromptResponse> prompt(const dwarfkit::PromptArgs& Args,
-                                                      dwarfkit::CancelToken) override
+                                                      dwarfkit::CancelToken Token) override
     {
+        if (Token.cancelled())
+        {
+            return dwarfkit::err(dwarfkit::ErrorKind::Canceled, "Prompt cancelled");
+        }
         TArray<FDkPromptElement> Elements;
         for (const auto& Element : Args.elements)
         {
@@ -78,49 +89,58 @@ public:
             {
                 Converted.Label = UTF8_TO_TCHAR(Element.label->c_str());
             }
-            Converted.DataJson = UTF8_TO_TCHAR(Element.data.dump().c_str());
+            Converted.DataJson = UTF8_TO_TCHAR(DataText(Element.data).c_str());
             Elements.Add(MoveTemp(Converted));
         }
         RunOnGameThread(
             [Title = FString(UTF8_TO_TCHAR(Args.title.c_str())),
              Body = FString(UTF8_TO_TCHAR(Args.body.value_or("").c_str())),
              Elements = MoveTemp(Elements)](UDwarfkitUI* Widget)
-            { Widget->OnPrompt(Title, Body, Elements); });
+            { Widget->OnPrompt(Title, Body, Elements); },
+            Token);
         return dwarfkit::PromptResponse{};
     }
 
     void status(const std::string& Message) override
     {
         RunOnGameThread([Text = FString(UTF8_TO_TCHAR(Message.c_str()))](UDwarfkitUI* Widget)
-                        { Widget->OnStatus(Text); });
+                        { Widget->OnStatus(Text); },
+                        dwarfkit::CancelToken());
     }
 
 private:
-    // Dispatch to the game thread and block the worker until it ran, so UI
-    // ordering matches the kit's flow.
-    void RunOnGameThread(TFunction<void(UDwarfkitUI*)> Fn)
+    // A qr or link element's data is the payload itself (the esr: URI), not
+    // a JSON-encoded string with quotes around it; anything structured is
+    // serialized. The payload comes from a wallet, so invalid UTF-8 is
+    // replaced rather than allowed to throw.
+    static std::string DataText(const dwarfkit::json& Data)
     {
-        if (IsInGameThread())
+        if (Data.is_string())
         {
-            if (UDwarfkitUI* Widget = UI.Get())
-            {
-                Fn(Widget);
-            }
-            return;
+            return Data.get<std::string>();
         }
-        FEventRef Done{EEventMode::AutoReset};
-        TWeakObjectPtr<UDwarfkitUI> LocalUI = UI;
-        AsyncTask(ENamedThreads::GameThread,
-                  [&Done, LocalUI, Fn = MoveTemp(Fn)]()
-                  {
-                      if (UDwarfkitUI* Widget = LocalUI.Get())
-                      {
-                          Fn(Widget);
-                      }
-                      Done->Trigger();
-                  });
-        Done->Wait();
+        return Data.dump(-1, ' ', false, dwarfkit::json::error_handler_t::replace);
     }
 
-    TWeakObjectPtr<UDwarfkitUI> UI;
+    // Dispatch to the game thread and wait until it ran, so UI ordering
+    // matches the kit's flow. The wait is bounded and cancellable: a game
+    // thread that stopped ticking must not pin the worker.
+    void RunOnGameThread(TFunction<void(UDwarfkitUI*)> Fn, const dwarfkit::CancelToken& Token)
+    {
+        TWeakObjectPtr<UDwarfkitSubsystem> WeakSubsystem = Subsystem;
+        DkUnreal::RunOnGameThreadAndWait(
+            [WeakSubsystem, Fn = MoveTemp(Fn)]()
+            {
+                if (UDwarfkitSubsystem* Sub = WeakSubsystem.Get())
+                {
+                    if (UDwarfkitUI* Widget = Sub->GetUI().Get())
+                    {
+                        Fn(Widget);
+                    }
+                }
+            },
+            Token, 10000);
+    }
+
+    TWeakObjectPtr<UDwarfkitSubsystem> Subsystem;
 };

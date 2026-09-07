@@ -15,3 +15,16 @@ CMakeUserPresets.json
 
 # misc
 *.log
+
+# engine adapter inputs: the godot-cpp checkout, prebuilt dwarfkit libs, the
+# header tree copied for the Unreal ThirdParty module, and scons artifacts.
+# These are produced by following each adapter's README, never committed.
+adapters/godot/godot-cpp/
+adapters/godot/lib/
+adapters/godot/demo/bin/
+adapters/godot/.sconsign.dblite
+adapters/godot/src/*.obj
+adapters/godot/src/*.os
+adapters/godot/src/*.o
+adapters/unreal/Dwarfkit/Source/ThirdParty/DwarfkitLib/lib/
+adapters/unreal/Dwarfkit/Source/ThirdParty/DwarfkitLib/include/

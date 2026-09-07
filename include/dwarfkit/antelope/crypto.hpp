@@ -39,8 +39,16 @@ Result<std::vector<uint8_t>> sharedSecret(std::span<const uint8_t> secret,
                                           std::span<const uint8_t> pubkey, KeyType type);
 
 // Verify a 65-byte signature against a digest and 33-byte compressed key.
+// Unreal's CoreMinimal.h defines verify() as a function-like macro in every
+// configuration, and parsing a declaration named verify with it active is a
+// compile error. Save, clear and restore the macro around the declaration;
+// push_macro/pop_macro is supported by MSVC, GCC and Clang and is a no-op when
+// nothing named verify is defined.
+#pragma push_macro("verify")
+#undef verify
 bool verify(std::span<const uint8_t> signature, std::span<const uint8_t> message,
             std::span<const uint8_t> pubkey, KeyType type);
+#pragma pop_macro("verify")
 
 // Generate a new 32-byte private key.
 Result<std::array<uint8_t, 32>> generate(KeyType type);

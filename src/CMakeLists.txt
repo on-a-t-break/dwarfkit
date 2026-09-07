@@ -106,7 +106,9 @@ if(WIN32)
 endif()
 
 target_compile_features(dwarfkit PUBLIC cxx_std_20)
-# consumers compile DK_FIELDS variadic macros too
+# no longer required (the DK_FIELDS macros rescan through DK_EXPAND, so they
+# expand correctly under the legacy MSVC preprocessor too); still exported so
+# CMake consumers compile with the same conformance as the library
 target_compile_options(dwarfkit PUBLIC $<$<CXX_COMPILER_ID:MSVC>:/Zc:preprocessor>)
 dk_warnings(dwarfkit)
 
@@ -134,6 +136,10 @@ if(DK_WITH_CURL)
       # pinned by commit rather than tag; curl-8_10_1 pointed here
       GIT_TAG 7eb8c048470ed2cc14dca75be9c1cdae7ac8498b
       GIT_SHALLOW TRUE)
+    # libcurl is a private dependency of the optional dwarfkit_curl transport and
+    # is not part of the install (engines supply their own transports), so keep
+    # its own install rules from adding headers and a pkgconfig to the prefix
+    set(CURL_DISABLE_INSTALL ON CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(curl)
   endif()
   add_library(dwarfkit_curl STATIC

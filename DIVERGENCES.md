@@ -296,3 +296,52 @@ error through the normal `Result<T>` channel.
 - TackleBox registers no URL scheme, so `openLink` is normally left unset and
   the login request reaches the wallet as a QR code or a pasted `esr:` URI,
   which is the transport's behavior when nothing can be opened.
+
+## Engine adapters (pre-release verification pass)
+
+- The two functions named `verify` (`crypto::verify`, `IdentityProof::verify`)
+  keep their upstream names but their declarations are wrapped in
+  `push_macro("verify")` / `#undef verify` / `pop_macro`. Unreal's CoreMinimal.h
+  defines `verify()` as a function-like macro in every configuration, so the
+  headers did not parse in a UE translation unit. BLUEPRINT.md's rule against
+  engine macro names in headers now covers `verify`; UE code that calls
+  `IdentityProof::verify` directly has to wrap the call the same way.
+- The `DK_FIELDS` variadic machinery rescans through `DK_EXPAND(x) x` at every
+  recursion, `DK_NARG` and `DK_SFE`. Without it the macros only expanded
+  correctly under MSVC's conforming preprocessor, which engine build systems
+  (scons, UnrealBuildTool) cannot be relied on to enable; the rescan makes them
+  correct under the legacy preprocessor too and is a no-op elsewhere. The
+  CMake package config still exports `/Zc:preprocessor` for CMake consumers,
+  but nothing requires it.
+- Godot adapter, build: `use_static_cpp` defaults to `no` on Windows so the
+  C runtime matches the dwarfkit library (godot-cpp's `/MT` default cannot be
+  linked with the library's `/MD`, LNK2038), `disable_exceptions` defaults to
+  `no` for the same one-definition reason, the adapter compiles as C++20 in a
+  cloned environment so godot-cpp keeps its own standard, all five archives
+  are linked (a static library never bundles its private dependencies) plus
+  `bcrypt` on Windows, and macOS builds the `.framework` layout the manifest
+  lists. The documented Windows build did not compile or link before this.
+- Godot adapter, runtime: workers never hold a `Ref` to their wrapper (they
+  capture a `Callable`, which addresses the object by id and is dropped once
+  it is gone, plus a shared state block), the main thread never joins a
+  worker, every wait a worker can sit in observes the kit's `CancelToken`
+  (new `cancel()`), prompts wait on a per-call `Semaphore` with a bound, the
+  UI lives in a replaceable slot so `set_ui` works after `configure`, the
+  script overrides are `GDVIRTUAL`s, the shared websocket peer is mutex
+  guarded, and every poll loop has a deadline and a size cap. The previous
+  design deadlocked on `login()` followed by `logout()` and could destroy the
+  wrapper on its own worker.
+- Unreal adapter: `DwarfkitLib.Build.cs` links the five archives and `bcrypt`
+  and resolves the vendored headers from the layout it documents; the module
+  enables exceptions to match the library; the async nodes register with the
+  game instance for the duration of the call and capture UObjects weakly;
+  the subsystem shares ownership of the kit with its workers and cancels a
+  token in `Deinitialize`/`Cancel` instead of freeing the kit under them;
+  HTTP completion is delivered on the HTTP thread so a worker never waits on
+  the game thread ticking; the websocket is created, connected and closed on
+  the game thread and messages are reassembled from raw frames (the text and
+  raw delegates were both bound, queuing every text frame twice and dropping
+  every non-final fragment); `FDkUnrealStorage` is the storage; a `qr`
+  element's data is the `esr:` payload rather than a JSON-quoted string.
+  Reviewed against the current headers, not compiled: no usable Unreal
+  install exists on the machine this was written on.

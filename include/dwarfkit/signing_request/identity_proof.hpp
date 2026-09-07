@@ -31,8 +31,16 @@ struct IdentityProof {
 
     // Verify that given authority signed this proof; currentTime defaults to
     // the system clock.
+    // Unreal's CoreMinimal.h defines verify() as a function-like macro in every
+    // configuration, and parsing a declaration named verify with it active is a
+    // compile error. Save, clear and restore the macro around the declaration;
+    // push_macro/pop_macro is supported by MSVC, GCC and Clang and is a no-op when
+    // nothing named verify is defined.
+#pragma push_macro("verify")
+#undef verify
     Result<bool> verify(const Authority& auth,
                         std::optional<TimePointSec> currentTime = std::nullopt) const;
+#pragma pop_macro("verify")
 
     // Encode the proof to an EOSIO auth header string.
     std::string toString() const;

@@ -53,7 +53,7 @@ if (result) {
 | @wharfkit/actionstream | `dwarfkit/actionstream.hpp` | done (blocking pull client) |
 | @wharfkit/atomicassets | `dwarfkit/atomicassets.hpp` | done (contracts are dkgen output) |
 | @wharfkit/cli `generate` | `dkgen` tool | done, golden-output tests |
-| engine adapters | `adapters/unreal`, `adapters/godot` | source complete, build inside an engine project |
+| engine adapters | `adapters/godot`, `adapters/unreal` | Godot: builds and loads against godot-cpp 4.3 (verified on Windows); Unreal: reviewed against 5.4, compile inside a UE project |
 
 Wallet plugins: `WalletPluginPrivateKey`, `WalletPluginAnchor`, `WalletPluginCleos`, `WalletPluginCloudWallet`, and `WalletPluginTackleBox` for [TackleBox](https://github.com/on-a-t-break/tacklebox), a native C++ Antelope wallet that speaks the wallet half of anchor-link.
 
@@ -85,6 +85,18 @@ target_link_libraries(app PRIVATE Dwarfkit::dwarfkit)
 ```
 
 The curl transport is not part of the install; engines supply their own transports and other consumers can vendor the repo with `add_subdirectory`/FetchContent to get `dwarfkit_curl`.
+
+### Consuming without CMake (engine build systems)
+
+Link the five archives the build produces, since a static library never
+bundles its private dependencies: `dwarfkit`, `libsecp256k1` (named
+`secp256k1` outside the MSVC generator), `secp256k1_precomputed`,
+`dk_trezor_crypto`, `dk_zlib`, plus `bcrypt` on Windows for the OS CSPRNG.
+Put `include/` (dwarfkit, `tl/`, `nlohmann/`) on the include path and compile
+as C++20. No other flags are needed: the headers compile under both MSVC
+preprocessors and avoid the engine macro names. Build the library with the
+same C runtime and exception setting as the code that links it; the adapter
+READMEs give the exact commands.
 
 ## Examples and tools
 

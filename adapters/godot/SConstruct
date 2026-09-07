@@ -6,29 +6,89 @@
 #   cmake --build build-godot --config Release --target dwarfkit
 # then place the lib in lib/<platform>/ and point DWARFKIT_ROOT at the repo.
 import os
+import sys
+
+# On Windows godot-cpp defaults to a static C runtime (use_static_cpp=yes,
+# /MT) while the dwarfkit library the README builds uses CMake's default
+# dynamic runtime (/MD). MSVC refuses to link objects with different runtimes
+# into one DLL (LNK2038), so match the library by defaulting to the dynamic
+# runtime here. For a static runtime instead, build dwarfkit with
+# -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded and pass use_static_cpp=yes.
+host_platform = "windows" if sys.platform == "win32" else ""
+if ARGUMENTS.get("platform", host_platform) == "windows":
+    ARGUMENTS.setdefault("use_static_cpp", "no")
+
+# godot-cpp defaults to disable_exceptions=yes, which compiles with
+# _HAS_EXCEPTIONS=0 on MSVC and -fno-exceptions elsewhere. dwarfkit's public
+# API is exception-free but the library is built with exceptions enabled (it
+# guards throwing standard calls internally), and header-only code shared
+# across the boundary (the STL, nlohmann::json, tl::expected) must be
+# instantiated with the same setting on both sides or it violates the ODR.
+# Match the library.
+ARGUMENTS.setdefault("disable_exceptions", "no")
 
 env = SConscript("godot-cpp/SConstruct")
 
+# The adapter compiles dwarfkit headers, which need C++20 and, on MSVC, the
+# conforming preprocessor: the DK_FIELDS macros forward __VA_ARGS__ through
+# recursive expansions that the legacy preprocessor mishandles. godot-cpp
+# builds its own objects with its own standard, so clone the environment
+# rather than changing what it was built with.
+adapter_env = env.Clone()
+if adapter_env["platform"] == "windows" and not adapter_env.get("use_mingw", False):
+    adapter_env.Append(CXXFLAGS=["/std:c++20", "/Zc:preprocessor"])
+else:
+    adapter_env.Append(CXXFLAGS=["-std=c++20"])
+
 dwarfkit_root = os.environ.get("DWARFKIT_ROOT", "../..")
-env.Append(CPPPATH=[
+adapter_env.Append(CPPPATH=[
     "src/",
     os.path.join(dwarfkit_root, "include"),
     os.path.join(dwarfkit_root, "third_party/expected/include"),
     os.path.join(dwarfkit_root, "third_party/nlohmann/include"),
 ])
-env.Append(LIBPATH=["lib/" + env["platform"]])
-env.Append(LIBS=["dwarfkit"])
+adapter_env.Append(LIBPATH=["lib/" + adapter_env["platform"]])
+# dwarfkit is a static archive and links its dependencies privately, and a
+# static archive never bundles what it depends on: the DLL link needs every
+# one of them. libsecp256k1 keeps its "lib" prefix in the archive name under
+# the MSVC generator (libsecp256k1.lib), and its precomputed tables ship as
+# a separate archive.
+secp256k1 = (
+    "libsecp256k1"
+    if adapter_env["platform"] == "windows" and not adapter_env.get("use_mingw", False)
+    else "secp256k1"
+)
+adapter_env.Append(LIBS=[
+    "dwarfkit",
+    secp256k1,
+    "secp256k1_precomputed",
+    "dk_trezor_crypto",
+    "dk_zlib",
+])
+if adapter_env["platform"] == "windows":
+    # the OS CSPRNG behind PrivateKey::generate
+    adapter_env.Append(LIBS=["bcrypt"])
 
 sources = Glob("src/*.cpp")
 
-if env["platform"] == "windows":
-    library = env.SharedLibrary(
-        "demo/bin/dwarfkit{}{}".format(env["suffix"], env["SHLIBSUFFIX"]),
+if adapter_env["platform"] == "macos":
+    # macOS extensions are framework bundles; this is the layout the
+    # .gdextension manifest lists and the one godot-cpp's own template uses
+    library = adapter_env.SharedLibrary(
+        "demo/bin/libdwarfkit.{}.{}.framework/libdwarfkit.{}.{}".format(
+            adapter_env["platform"], adapter_env["target"],
+            adapter_env["platform"], adapter_env["target"],
+        ),
+        source=sources,
+    )
+elif adapter_env["platform"] == "windows":
+    library = adapter_env.SharedLibrary(
+        "demo/bin/dwarfkit{}{}".format(adapter_env["suffix"], adapter_env["SHLIBSUFFIX"]),
         source=sources,
     )
 else:
-    library = env.SharedLibrary(
-        "demo/bin/libdwarfkit{}{}".format(env["suffix"], env["SHLIBSUFFIX"]),
+    library = adapter_env.SharedLibrary(
+        "demo/bin/libdwarfkit{}{}".format(adapter_env["suffix"], adapter_env["SHLIBSUFFIX"]),
         source=sources,
     )
 

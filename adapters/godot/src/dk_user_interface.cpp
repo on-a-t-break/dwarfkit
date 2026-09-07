@@ -1,57 +1,79 @@
 #include "dk_user_interface.h"
 
+#include <chrono>
+#include <thread>
+
 #include <godot_cpp/core/class_db.hpp>
 
 namespace dwarfkit_godot {
 
 using namespace godot;
 
-void DkUserInterface::_bind_methods() {
-    ClassDB::bind_method(D_METHOD("_run_prompt", "args"), &DkUserInterface::RunPrompt);
-    ClassDB::bind_method(D_METHOD("_run_status", "message"), &DkUserInterface::RunStatus);
-    ClassDB::bind_method(D_METHOD("_run_error", "message"), &DkUserInterface::RunError);
-    // scripts extending DkUserInterface override these
-    ClassDB::bind_method(D_METHOD("_prompt", "args"), &DkUserInterface::_prompt);
-    ClassDB::bind_method(D_METHOD("_status", "message"), &DkUserInterface::_status);
-    ClassDB::bind_method(D_METHOD("_error", "message"), &DkUserInterface::_error);
-}
+namespace {
 
-Ref<Semaphore> DkUserInterface::Done() {
-    if (done_.is_null()) {
-        done_.instantiate();
+// Waits for the main thread to run a deferred call. Returns early on
+// cancellation, and after a generous bound in case the script freed the UI
+// before the call ran: the deferred call is then dropped and nothing would
+// ever post the Semaphore.
+void waitForMainThread(const Ref<Semaphore>& done, const dwarfkit::CancelToken& token) {
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(10);
+    while (!done->try_wait()) {
+        if (token.cancelled() || std::chrono::steady_clock::now() >= deadline) {
+            return;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
-    return done_;
 }
 
-void DkUserInterface::RunPrompt(const Dictionary& args) {
-    // call() dispatches to the script override when one exists
-    call("_prompt", args);
-    Done()->post();
+Ref<Semaphore> newSemaphore() {
+    Ref<Semaphore> done;
+    done.instantiate();
+    return done;
 }
 
-void DkUserInterface::RunStatus(const String& message) {
-    call("_status", message);
-    Done()->post();
+}  // namespace
+
+void DkUserInterface::_bind_methods() {
+    ClassDB::bind_method(D_METHOD("_run_prompt", "args", "done"), &DkUserInterface::RunPrompt);
+    ClassDB::bind_method(D_METHOD("_run_status", "message", "done"),
+                         &DkUserInterface::RunStatus);
+    ClassDB::bind_method(D_METHOD("_run_error", "message", "done"), &DkUserInterface::RunError);
+    GDVIRTUAL_BIND(_prompt, "args");
+    GDVIRTUAL_BIND(_status, "message");
+    GDVIRTUAL_BIND(_error, "message");
 }
 
-void DkUserInterface::RunError(const String& message) {
-    call("_error", message);
-    Done()->post();
+void DkUserInterface::RunPrompt(const Dictionary& args, Ref<Semaphore> done) {
+    GDVIRTUAL_CALL(_prompt, args);
+    done->post();
 }
 
-void DkUserInterface::PromptFromWorker(const Dictionary& args) {
-    call_deferred("_run_prompt", args);
-    Done()->wait();
+void DkUserInterface::RunStatus(const String& message, Ref<Semaphore> done) {
+    GDVIRTUAL_CALL(_status, message);
+    done->post();
 }
 
-void DkUserInterface::StatusFromWorker(const String& message) {
-    call_deferred("_run_status", message);
-    Done()->wait();
+void DkUserInterface::RunError(const String& message, Ref<Semaphore> done) {
+    GDVIRTUAL_CALL(_error, message);
+    done->post();
 }
 
-void DkUserInterface::ErrorFromWorker(const String& message) {
-    call_deferred("_run_error", message);
-    Done()->wait();
+void DkUserInterface::PromptFromWorker(const Dictionary& args, dwarfkit::CancelToken token) {
+    const Ref<Semaphore> done = newSemaphore();
+    call_deferred("_run_prompt", args, done);
+    waitForMainThread(done, token);
+}
+
+void DkUserInterface::StatusFromWorker(const String& message, dwarfkit::CancelToken token) {
+    const Ref<Semaphore> done = newSemaphore();
+    call_deferred("_run_status", message, done);
+    waitForMainThread(done, token);
+}
+
+void DkUserInterface::ErrorFromWorker(const String& message, dwarfkit::CancelToken token) {
+    const Ref<Semaphore> done = newSemaphore();
+    call_deferred("_run_error", message, done);
+    waitForMainThread(done, token);
 }
 
 // ---- DkGodotUserInterface --------------------------------------------------
@@ -68,8 +90,8 @@ dwarfkit::Result<dwarfkit::UserInterfaceLoginResponse> DkGodotUserInterface::log
 }
 
 dwarfkit::Result<void> DkGodotUserInterface::onError(const dwarfkit::Error& error) {
-    if (ui_.is_valid()) {
-        ui_->ErrorFromWorker(ToGodot(error.message));
+    if (const Ref<DkUserInterface> ui = slot_->get(); ui.is_valid()) {
+        ui->ErrorFromWorker(ToGodot(error.message), dwarfkit::CancelToken());
     }
     return {};
 }
@@ -81,8 +103,11 @@ DkGodotUserInterface::onAccountCreate(dwarfkit::CreateAccountContext&) {
 }
 
 dwarfkit::Result<dwarfkit::PromptResponse> DkGodotUserInterface::prompt(
-    const dwarfkit::PromptArgs& args, dwarfkit::CancelToken) {
-    if (ui_.is_valid()) {
+    const dwarfkit::PromptArgs& args, dwarfkit::CancelToken token) {
+    if (token.cancelled()) {
+        return dwarfkit::err(dwarfkit::ErrorKind::Canceled, "Prompt cancelled");
+    }
+    if (const Ref<DkUserInterface> ui = slot_->get(); ui.is_valid()) {
         Dictionary dict;
         dict["title"] = ToGodot(args.title);
         dict["body"] = ToGodot(args.body.value_or(""));
@@ -108,14 +133,14 @@ dwarfkit::Result<dwarfkit::PromptResponse> DkGodotUserInterface::prompt(
             elements.push_back(item);
         }
         dict["elements"] = elements;
-        ui_->PromptFromWorker(dict);
+        ui->PromptFromWorker(dict, token);
     }
     return dwarfkit::PromptResponse{};
 }
 
 void DkGodotUserInterface::status(const std::string& message) {
-    if (ui_.is_valid()) {
-        ui_->StatusFromWorker(ToGodot(message));
+    if (const Ref<DkUserInterface> ui = slot_->get(); ui.is_valid()) {
+        ui->StatusFromWorker(ToGodot(message), dwarfkit::CancelToken());
     }
 }
 

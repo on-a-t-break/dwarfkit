@@ -205,50 +205,57 @@ public:
 // DK_STRUCT / DK_FIELDS machinery (32 fields max)
 // ---------------------------------------------------------------------------
 
+// Forces one more rescan so MSVC's legacy preprocessor splits a forwarded
+// __VA_ARGS__ into separate arguments instead of passing it as one token. A
+// no-op under a conforming preprocessor, so consumers no longer need
+// /Zc:preprocessor to compile these headers (engine build systems cannot be
+// relied on to pass it).
+#define DK_EXPAND(x) x
+
 // statement-map: DK_SFE(m, a, b) -> m(a) m(b)
 #define DK_SFE_1(m, a) m(a)
-#define DK_SFE_2(m, a, ...) m(a) DK_SFE_1(m, __VA_ARGS__)
-#define DK_SFE_3(m, a, ...) m(a) DK_SFE_2(m, __VA_ARGS__)
-#define DK_SFE_4(m, a, ...) m(a) DK_SFE_3(m, __VA_ARGS__)
-#define DK_SFE_5(m, a, ...) m(a) DK_SFE_4(m, __VA_ARGS__)
-#define DK_SFE_6(m, a, ...) m(a) DK_SFE_5(m, __VA_ARGS__)
-#define DK_SFE_7(m, a, ...) m(a) DK_SFE_6(m, __VA_ARGS__)
-#define DK_SFE_8(m, a, ...) m(a) DK_SFE_7(m, __VA_ARGS__)
-#define DK_SFE_9(m, a, ...) m(a) DK_SFE_8(m, __VA_ARGS__)
-#define DK_SFE_10(m, a, ...) m(a) DK_SFE_9(m, __VA_ARGS__)
-#define DK_SFE_11(m, a, ...) m(a) DK_SFE_10(m, __VA_ARGS__)
-#define DK_SFE_12(m, a, ...) m(a) DK_SFE_11(m, __VA_ARGS__)
-#define DK_SFE_13(m, a, ...) m(a) DK_SFE_12(m, __VA_ARGS__)
-#define DK_SFE_14(m, a, ...) m(a) DK_SFE_13(m, __VA_ARGS__)
-#define DK_SFE_15(m, a, ...) m(a) DK_SFE_14(m, __VA_ARGS__)
-#define DK_SFE_16(m, a, ...) m(a) DK_SFE_15(m, __VA_ARGS__)
-#define DK_SFE_17(m, a, ...) m(a) DK_SFE_16(m, __VA_ARGS__)
-#define DK_SFE_18(m, a, ...) m(a) DK_SFE_17(m, __VA_ARGS__)
-#define DK_SFE_19(m, a, ...) m(a) DK_SFE_18(m, __VA_ARGS__)
-#define DK_SFE_20(m, a, ...) m(a) DK_SFE_19(m, __VA_ARGS__)
-#define DK_SFE_21(m, a, ...) m(a) DK_SFE_20(m, __VA_ARGS__)
-#define DK_SFE_22(m, a, ...) m(a) DK_SFE_21(m, __VA_ARGS__)
-#define DK_SFE_23(m, a, ...) m(a) DK_SFE_22(m, __VA_ARGS__)
-#define DK_SFE_24(m, a, ...) m(a) DK_SFE_23(m, __VA_ARGS__)
-#define DK_SFE_25(m, a, ...) m(a) DK_SFE_24(m, __VA_ARGS__)
-#define DK_SFE_26(m, a, ...) m(a) DK_SFE_25(m, __VA_ARGS__)
-#define DK_SFE_27(m, a, ...) m(a) DK_SFE_26(m, __VA_ARGS__)
-#define DK_SFE_28(m, a, ...) m(a) DK_SFE_27(m, __VA_ARGS__)
-#define DK_SFE_29(m, a, ...) m(a) DK_SFE_28(m, __VA_ARGS__)
-#define DK_SFE_30(m, a, ...) m(a) DK_SFE_29(m, __VA_ARGS__)
-#define DK_SFE_31(m, a, ...) m(a) DK_SFE_30(m, __VA_ARGS__)
-#define DK_SFE_32(m, a, ...) m(a) DK_SFE_31(m, __VA_ARGS__)
+#define DK_SFE_2(m, a, ...) m(a) DK_EXPAND(DK_SFE_1(m, __VA_ARGS__))
+#define DK_SFE_3(m, a, ...) m(a) DK_EXPAND(DK_SFE_2(m, __VA_ARGS__))
+#define DK_SFE_4(m, a, ...) m(a) DK_EXPAND(DK_SFE_3(m, __VA_ARGS__))
+#define DK_SFE_5(m, a, ...) m(a) DK_EXPAND(DK_SFE_4(m, __VA_ARGS__))
+#define DK_SFE_6(m, a, ...) m(a) DK_EXPAND(DK_SFE_5(m, __VA_ARGS__))
+#define DK_SFE_7(m, a, ...) m(a) DK_EXPAND(DK_SFE_6(m, __VA_ARGS__))
+#define DK_SFE_8(m, a, ...) m(a) DK_EXPAND(DK_SFE_7(m, __VA_ARGS__))
+#define DK_SFE_9(m, a, ...) m(a) DK_EXPAND(DK_SFE_8(m, __VA_ARGS__))
+#define DK_SFE_10(m, a, ...) m(a) DK_EXPAND(DK_SFE_9(m, __VA_ARGS__))
+#define DK_SFE_11(m, a, ...) m(a) DK_EXPAND(DK_SFE_10(m, __VA_ARGS__))
+#define DK_SFE_12(m, a, ...) m(a) DK_EXPAND(DK_SFE_11(m, __VA_ARGS__))
+#define DK_SFE_13(m, a, ...) m(a) DK_EXPAND(DK_SFE_12(m, __VA_ARGS__))
+#define DK_SFE_14(m, a, ...) m(a) DK_EXPAND(DK_SFE_13(m, __VA_ARGS__))
+#define DK_SFE_15(m, a, ...) m(a) DK_EXPAND(DK_SFE_14(m, __VA_ARGS__))
+#define DK_SFE_16(m, a, ...) m(a) DK_EXPAND(DK_SFE_15(m, __VA_ARGS__))
+#define DK_SFE_17(m, a, ...) m(a) DK_EXPAND(DK_SFE_16(m, __VA_ARGS__))
+#define DK_SFE_18(m, a, ...) m(a) DK_EXPAND(DK_SFE_17(m, __VA_ARGS__))
+#define DK_SFE_19(m, a, ...) m(a) DK_EXPAND(DK_SFE_18(m, __VA_ARGS__))
+#define DK_SFE_20(m, a, ...) m(a) DK_EXPAND(DK_SFE_19(m, __VA_ARGS__))
+#define DK_SFE_21(m, a, ...) m(a) DK_EXPAND(DK_SFE_20(m, __VA_ARGS__))
+#define DK_SFE_22(m, a, ...) m(a) DK_EXPAND(DK_SFE_21(m, __VA_ARGS__))
+#define DK_SFE_23(m, a, ...) m(a) DK_EXPAND(DK_SFE_22(m, __VA_ARGS__))
+#define DK_SFE_24(m, a, ...) m(a) DK_EXPAND(DK_SFE_23(m, __VA_ARGS__))
+#define DK_SFE_25(m, a, ...) m(a) DK_EXPAND(DK_SFE_24(m, __VA_ARGS__))
+#define DK_SFE_26(m, a, ...) m(a) DK_EXPAND(DK_SFE_25(m, __VA_ARGS__))
+#define DK_SFE_27(m, a, ...) m(a) DK_EXPAND(DK_SFE_26(m, __VA_ARGS__))
+#define DK_SFE_28(m, a, ...) m(a) DK_EXPAND(DK_SFE_27(m, __VA_ARGS__))
+#define DK_SFE_29(m, a, ...) m(a) DK_EXPAND(DK_SFE_28(m, __VA_ARGS__))
+#define DK_SFE_30(m, a, ...) m(a) DK_EXPAND(DK_SFE_29(m, __VA_ARGS__))
+#define DK_SFE_31(m, a, ...) m(a) DK_EXPAND(DK_SFE_30(m, __VA_ARGS__))
+#define DK_SFE_32(m, a, ...) m(a) DK_EXPAND(DK_SFE_31(m, __VA_ARGS__))
 
 #define DK_NARG(...)                                                                              \
-    DK_NARG_IMPL(__VA_ARGS__, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, \
-                 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1)
+    DK_EXPAND(DK_NARG_IMPL(__VA_ARGS__, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, \
+                           17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1))
 #define DK_NARG_IMPL(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17,   \
                      a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, N, \
                      ...)                                                                          \
     N
 
 #define DK_SFE_DISPATCH(N) DK_CAT(DK_SFE_, N)
-#define DK_SFE(m, ...) DK_SFE_DISPATCH(DK_NARG(__VA_ARGS__))(m, __VA_ARGS__)
+#define DK_SFE(m, ...) DK_EXPAND(DK_SFE_DISPATCH(DK_NARG(__VA_ARGS__))(m, __VA_ARGS__))
 
 #define DK_VISIT_FIELD(x) dkFn(std::string_view(#x), this->x);
 
