@@ -11,7 +11,7 @@ Please do not report security issues through public GitHub issues.
 
 Use GitHub's private vulnerability reporting instead: open the repository's
 **Security** tab and choose **Report a vulnerability**, or go directly to
-<https://github.com/on-a-t-break/dwarfkit/security/advisories/new>.
+<https://github.com/doyen-games/dwarfkit/security/advisories/new>.
 
 You should receive a response within a few days. Please include a minimal
 reproduction where possible.

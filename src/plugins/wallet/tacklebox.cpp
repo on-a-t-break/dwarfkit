@@ -43,8 +43,8 @@ WalletPluginTackleBox::WalletPluginTackleBox(const WalletPluginTackleBoxOptions&
         json{{"name", "TackleBox"},
              {"description", "Native C++ wallet and block explorer for Antelope chains"},
              {"logo", tackleboxLogo},
-             {"homepage", "https://github.com/on-a-t-break/tacklebox"},
-             {"download", "https://github.com/on-a-t-break/tacklebox/releases"}});
+             {"homepage", "https://github.com/doyen-games/tacklebox"},
+             {"download", "https://github.com/doyen-games/tacklebox/releases"}});
 }
 
 anchor::TransportOptions WalletPluginTackleBox::transportOptions() {

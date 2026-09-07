@@ -2,7 +2,7 @@
 
 # Dwarfkit
 
-[![release](https://img.shields.io/github/v/release/on-a-t-break/dwarfkit)](https://github.com/on-a-t-break/dwarfkit/releases)
+[![release](https://img.shields.io/github/v/release/doyen-games/dwarfkit)](https://github.com/doyen-games/dwarfkit/releases)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Native C++20 port of [Wharfkit](https://github.com/wharfkit) (the Greymass SDK suite for Antelope blockchains), built as a static library for C++ software, primarily Unreal Engine and Godot.
@@ -60,7 +60,7 @@ if (result) {
 | @wharfkit/cli `generate` | `dkgen` tool | done, golden-output tests |
 | engine adapters | `adapters/godot`, `adapters/unreal` | Godot: builds and loads against godot-cpp 4.3 (verified on Windows); Unreal: reviewed against 5.4, compile inside a UE project |
 
-Wallet plugins: `WalletPluginPrivateKey`, `WalletPluginAnchor`, `WalletPluginCleos`, `WalletPluginCloudWallet`, and `WalletPluginTackleBox` for <img src="assets/tacklebox.svg" width="20" alt=""> [TackleBox](https://github.com/on-a-t-break/tacklebox), a native C++ Antelope wallet that speaks the wallet half of anchor-link.
+Wallet plugins: `WalletPluginPrivateKey`, `WalletPluginAnchor`, `WalletPluginCleos`, `WalletPluginCloudWallet`, and `WalletPluginTackleBox` for <img src="assets/tacklebox.svg" width="20" alt=""> [TackleBox](https://github.com/doyen-games/tacklebox), a native C++ Antelope wallet that speaks the wallet half of anchor-link.
 
 Not ported (browser-only or not applicable): web-renderer, react/vue hooks, browser-extension wallet plugins (Wombat, TokenPocket, Scatter...). See PORT_MANIFEST.md for every upstream repo's disposition.
 
@@ -76,7 +76,7 @@ ctest --test-dir build -C Debug
 
 Options: `DK_WITH_CURL` (default ON) builds the `dwarfkit_curl` transport (fetches libcurl 8.10 when not found); `DK_BUILD_TESTS` / `DK_BUILD_TOOLS` (dkgen) / `DK_BUILD_EXAMPLES` default ON at the top level; `DK_LIVE_TESTS` enables tests that hit live chain endpoints.
 
-Each [release](https://github.com/on-a-t-break/dwarfkit/releases) also ships a prebuilt Windows x64 archive (MSVC 2022, Release, `/MD`) laid out exactly like an installed prefix, plus a standalone `dkgen.exe`; unzip it and point `CMAKE_PREFIX_PATH` or the engine build at it instead of building from source.
+Each [release](https://github.com/doyen-games/dwarfkit/releases) also ships a prebuilt Windows x64 archive (MSVC 2022, Release, `/MD`) laid out exactly like an installed prefix, plus a standalone `dkgen.exe`; unzip it and point `CMAKE_PREFIX_PATH` or the engine build at it instead of building from source.
 
 ### Installing / find_package
 

@@ -1,4 +1,4 @@
-// Wallet plugin for TackleBox (https://github.com/on-a-t-break/tacklebox), a
+// Wallet plugin for TackleBox (https://github.com/doyen-games/tacklebox), a
 // native C++ Antelope wallet built on dwarfkit.
 //
 // TackleBox implements the wallet half of the anchor-link protocol: it answers
